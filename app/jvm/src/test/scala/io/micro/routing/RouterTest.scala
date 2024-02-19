@@ -13,7 +13,7 @@ case class Request(override val uri: String,
 
 case class Response(override val params: List[Param] = Nil) extends RouteResponse(params)
 
-class MyController extends ControllerSimple:
+class MyController extends ControllerDispatcher:
 
   type Req = Request
   type Resp = Response
@@ -38,9 +38,7 @@ class FirstSpec extends AnyFunSuite:
 
   val userDelete = route(Delete, user, new MyController())
 
-  val routes = List(
-    home, user, userSave, userGet, userDelete
-  ).map(_.compile())
+  val routes = prepare(home, user, userSave, userGet, userDelete)
 
   def testPathParams(uri: String, rt: Route, rs: Seq[Route], expecteds: Param*) =
     val result = process(Method.All, uri, rs)
@@ -60,6 +58,22 @@ class FirstSpec extends AnyFunSuite:
             assert(p == exp,
               s"wong param name: ${exp.name} != ${p.name}")
 
+
+          /*
+          route match
+            case rt: RouteController[_] =>
+
+              rt.controller match
+                case _: Controller =>
+                case _: ControllerAsync =>
+                case _: ControllerDispatcher =>
+                case _: ControllerAsyncDispatcher =>
+
+            case rd: RouteDispatcher[_, _] =>
+              rd.dispatch match
+                case _:RouteCallback[_, _ ] =>
+                case _:RouteAsyncCallback[_, _] =>
+          */
 
         case None =>
           fail(s"route $uri not found")

@@ -37,9 +37,9 @@ trait ControllerAsync extends ControllerBase:
 
   def patch(req: Req, f: Resp => Unit): Unit
 
-trait ControllerSimple extends ControllerBase:
+trait ControllerDispatcher extends ControllerBase:
 
   def dispatch(req: Req) : Resp
 
-trait ControllerSimpleAsync extends ControllerBase:
+trait ControllerAsyncDispatcher extends ControllerBase:
   def dispatch(req: Req, f: Resp => Unit): Unit

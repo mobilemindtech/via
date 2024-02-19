@@ -67,6 +67,9 @@ object Router:
   def middleware[TReq <: RouteRequest, TResp <: RouteResponse](dispatch: MiddlewareDispatcher[TReq, TResp]): Middleware[_, _] =
     Middleware(Method.All, dispatch)
 
+  def prepare(routes: Route*): Seq[Route] =
+    routes.map(_.compile())
+
   def process(method: Method, target: String, routes: Seq[Route]) : Option[(Route, List[Param])] =
 
     def find(rts: List[Route]): Option[(Route, List[Param])] =
