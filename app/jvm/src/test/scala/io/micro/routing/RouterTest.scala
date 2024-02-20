@@ -7,18 +7,16 @@ import io.micro.routing.Method._
 import org.scalatest.funsuite.AnyFunSuite
 
 
-case class Request(override val uri: String,
-                   override val method: String,
-                   override val path: Path) extends RouteRequest(uri, method, path)
+case class Request(override val method: Method,
+                   override val uri: String,
+                   override val path: Path,
+                   override val params: Seq[Param] = Nil) extends RouteRequest(method, uri, path, params)
 
-case class Response(override val params: List[Param] = Nil) extends RouteResponse(params)
+case class Response() extends RouteResponse
 
-class MyController extends ControllerDispatcher:
+class MyController extends ControllerDispatcher[Request, Response]:
 
-  type Req = Request
-  type Resp = Response
-
-  override def dispatch(req: Req): Resp = ???
+  override def dispatch(req: Request): Response = ???
 
 
 
@@ -41,42 +39,34 @@ class FirstSpec extends AnyFunSuite:
   val routes = prepare(home, user, userSave, userGet, userDelete)
 
   def testPathParams(uri: String, rt: Route, rs: Seq[Route], expecteds: Param*) =
-    val result = process(Method.All, uri, rs)
-
-      result match
-        case Some((route, params)) =>
-
-          assert(route.pattern == rt.pattern,
-            s"wong route found, -> ${route.pattern}")
-
-          assert(expecteds.size == params.size,
-            s"wrong expected params count: ${expecteds.size} != ${params.size}")
-
-          for i <- params.indices do
-            val p = params(i)
-            val exp = expecteds(i)
-            assert(p == exp,
-              s"wong param name: ${exp.name} != ${p.name}")
 
 
-          /*
-          route match
-            case rt: RouteController[_] =>
+    given c: RequestBuilder[Request] with
+      override def build(method: Method, target: String, path: Path, params: Seq[Param]): Request =
+        Request(method, target, path, params)
 
-              rt.controller match
-                case _: Controller =>
-                case _: ControllerAsync =>
-                case _: ControllerDispatcher =>
-                case _: ControllerAsyncDispatcher =>
 
-            case rd: RouteDispatcher[_, _] =>
-              rd.dispatch match
-                case _:RouteCallback[_, _ ] =>
-                case _:RouteAsyncCallback[_, _] =>
-          */
+    val router = new Router(rs){}
+      
 
-        case None =>
-          fail(s"route $uri not found")
+    router.chain(Method.All, uri) match
+      case RouteFound(route, params) =>
+
+        assert(route.pattern == rt.pattern,
+          s"wong route found, -> ${route.pattern}")
+
+        assert(expecteds.size == params.size,
+          s"wrong expected params count: ${expecteds.size} != ${params.size}")
+
+        for i <- params.indices do
+          val p = params(i)
+          val exp = expecteds(i)
+          assert(p == exp,
+            s"wong param name: ${exp.name} != ${p.name}")
+
+
+      case RouteNotFound() =>
+        fail(s"route $uri not found")
 
 
   test("route compile"){

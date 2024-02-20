@@ -3,12 +3,15 @@ package io.micro.routing
 import scala.collection.mutable
 
 
-trait RouteRequest(val uri: String, val method: String, val path: Path)
+trait RouteRequest(val method: Method,
+                   val uri: String,
+                   val path: Path,
+                   val params: Seq[Param])
 
-trait RouteResponse(val params: List[Param] = Nil)
+trait RouteResponse
 
 type RouteCallback[TReq <: RouteRequest, TResp <: RouteResponse] = TReq => TResp
-type RouteAsyncCallback[TReq <: RouteRequest, TResp <: RouteResponse]  = (TReq, TResp) => Unit
+type RouteAsyncCallback[TReq <: RouteRequest, TResp <: RouteResponse]  = (TReq, TResp => Unit) => Unit
 
 type RouterDispatcher[TReq <: RouteRequest, TResp <: RouteResponse] =
   RouteCallback[TReq, TResp] | RouteAsyncCallback[TReq, TResp]
@@ -64,8 +67,7 @@ trait Route(val method: Method,
     makeCompiled(joined, params.toList)
 
 
-case class RouteDispatcher[TReq <: RouteRequest, TResp <: RouteResponse](
-                                                                          override val method: Method,
+case class RouteDispatcher[TReq <: RouteRequest, TResp <: RouteResponse](override val method: Method,
                                                                           override val path: Path,
                                                                           override val next: Option[Middleware[_, _]] = None,
                                                                           override val prev: Option[Middleware[_, _]] = None,
@@ -83,8 +85,7 @@ case class RouteDispatcher[TReq <: RouteRequest, TResp <: RouteResponse](
   override def makeCompiled(pattern: String, params: List[PathParam]): Route =
     copy(pattern = Some(pattern), params = Some(params))
 
-case class RouteController[RouteCtrl <: ControllerBase](
-                                                         override val method: Method,
+case class RouteController[RouteCtrl <: ControllerBase](override val method: Method,
                                                          override val path: Path,
                                                          override val next: Option[Middleware[_, _]] = None,
                                                          override val prev: Option[Middleware[_, _]] = None,

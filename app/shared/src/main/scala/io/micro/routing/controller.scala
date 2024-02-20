@@ -1,11 +1,9 @@
 package io.micro.routing
 
-sealed trait ControllerBase:
-  type Req <: RouteRequest
-  type Resp <: RouteResponse
+sealed trait ControllerBase
 
-trait Controller extends ControllerBase:
 
+trait Controller[Req <: RouteRequest, Resp <: RouteResponse] extends ControllerBase:
 
   def get(req: Req): Resp
 
@@ -21,7 +19,7 @@ trait Controller extends ControllerBase:
 
   def patch(req: Req): Resp
 
-trait ControllerAsync extends ControllerBase:
+trait ControllerAsync[Req <: RouteRequest, Resp <: RouteResponse] extends ControllerBase:
 
   def get(req: Req, f: Resp => Unit): Unit
 
@@ -37,9 +35,9 @@ trait ControllerAsync extends ControllerBase:
 
   def patch(req: Req, f: Resp => Unit): Unit
 
-trait ControllerDispatcher extends ControllerBase:
+trait ControllerDispatcher[Req <: RouteRequest, Resp <: RouteResponse] extends ControllerBase:
 
   def dispatch(req: Req) : Resp
 
-trait ControllerAsyncDispatcher extends ControllerBase:
+trait ControllerAsyncDispatcher[Req <: RouteRequest, Resp <: RouteResponse] extends ControllerBase:
   def dispatch(req: Req, f: Resp => Unit): Unit
