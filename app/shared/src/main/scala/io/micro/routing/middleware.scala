@@ -1,9 +1,9 @@
 package io.micro.routing
 
-type MiddlewareDispatcher[TReq <: RouteRequest, TResp <: RouteResponse] = TReq => TResp
+type MiddlewareDispatcher[Req <: RouteRequest, Resp <: RouteResponse] = Req => Resp
 
-case class Middleware[TReq <: RouteRequest, TResp <: RouteResponse](method: Method,
-                                                                    dispatch: MiddlewareDispatcher[TReq, TResp],
+case class Middleware[Req <: RouteRequest, Resp <: RouteResponse](method: Method,
+                                                                    dispatch: MiddlewareDispatcher[Req, Resp],
                                                                     prev: Option[Middleware[_, _]] = None,
                                                                     next: Option[Middleware[_, _]] = None):
 

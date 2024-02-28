@@ -3,18 +3,46 @@ package io.micro.routing
 import scala.collection.mutable
 
 
+case class Params(raw: Seq[Param] = Nil):
+  def int(name: String): Option[Int] = raw.find(_.name == name) match
+    case Some(ParamInt(_, i)) => Some(i)
+    case _ => None
+
+  def long(name: String): Option[Long] = raw.find(_.name == name) match
+    case Some(ParamLong(_, i)) => Some(i)
+    case _ => None
+
+  def str(name: String): Option[String] = raw.find(_.name == name) match
+    case Some(ParamStr(_, i)) => Some(i)
+    case _ => None
+
+  def paths(name: String): List[String] = raw.find(_.name == name) match
+    case Some(ParamPaths(_, i)) => i
+    case _ => Nil
+
+  def tail(name: String): List[String] = paths(name)
+
+  def size: Int = raw.size
+
+  def indices: Range = raw.indices
+
+  def at(i: Int): Param = raw(i)
+
+case class Query(raw: List[QueryParam] = Nil, matcher: QueryMatcher = Nil)
+
+case class RoutePath(path: Path = Path(), matcher: RouteMatcher = Nil)
+
 trait RouteRequest(val method: Method,
                    val uri: String,
-                   val path: Path,
-                   val params: Seq[Param])
+                   val route: RoutePath,
+                   val params: Params,
+                   val query: Query)
 
 trait RouteResponse
 
-type RouteCallback[TReq <: RouteRequest, TResp <: RouteResponse] = TReq => TResp
-type RouteAsyncCallback[TReq <: RouteRequest, TResp <: RouteResponse]  = (TReq, TResp => Unit) => Unit
-
-type RouterDispatcher[TReq <: RouteRequest, TResp <: RouteResponse] =
-  RouteCallback[TReq, TResp] | RouteAsyncCallback[TReq, TResp]
+type RouteCallbackOpt[Req <: RouteRequest, Resp <: RouteResponse] = Req => Option[Resp]
+type RouteCallback[Req <: RouteRequest, Resp <: RouteResponse] = Req => Resp
+type RouteAsyncCallback[Req <: RouteRequest, Resp <: RouteResponse]  = (Req, Resp => Unit) => Unit
 
 trait Route(val method: Method,
             val path: Path,
@@ -36,7 +64,7 @@ trait Route(val method: Method,
   def ++ (middleware: Middleware[_, _]): Route =
     copyWithNext(middleware)
 
-  def compile() : Route =
+  def compile : Route =
 
     val params = mutable.ListBuffer[PathParam]()
 
@@ -67,13 +95,14 @@ trait Route(val method: Method,
     makeCompiled(joined, params.toList)
 
 
-case class RouteDispatcher[TReq <: RouteRequest, TResp <: RouteResponse](override val method: Method,
+case class RouteDispatcher[Req <: RouteRequest, Resp <: RouteResponse](override val method: Method,
                                                                           override val path: Path,
                                                                           override val next: Option[Middleware[_, _]] = None,
                                                                           override val prev: Option[Middleware[_, _]] = None,
                                                                           override val pattern: Option[String] = None,
                                                                           override val params: Option[List[PathParam]] = None,
-                                                                          dispatch: RouterDispatcher[TReq, TResp]
+                                                                          dispatch: Option[RouteCallback[Req, Resp]] = None,
+                                                                          dispatchAsync: Option[RouteAsyncCallback[Req, Resp]] = None,
                                                                         )  extends Route(method, path, next, prev):
 
   override def copyWithNext(middleware: Middleware[_, _]): Route =
