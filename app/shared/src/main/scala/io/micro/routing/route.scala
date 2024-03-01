@@ -3,38 +3,11 @@ package io.micro.routing
 import scala.collection.mutable
 
 
-case class Params(raw: Seq[Param] = Nil):
-  def int(name: String): Option[Int] = raw.find(_.name == name) match
-    case Some(ParamInt(_, i)) => Some(i)
-    case _ => None
 
-  def long(name: String): Option[Long] = raw.find(_.name == name) match
-    case Some(ParamLong(_, i)) => Some(i)
-    case _ => None
-
-  def str(name: String): Option[String] = raw.find(_.name == name) match
-    case Some(ParamStr(_, i)) => Some(i)
-    case _ => None
-
-  def paths(name: String): List[String] = raw.find(_.name == name) match
-    case Some(ParamPaths(_, i)) => i
-    case _ => Nil
-
-  def tail(name: String): List[String] = paths(name)
-
-  def size: Int = raw.size
-
-  def indices: Range = raw.indices
-
-  def at(i: Int): Param = raw(i)
-
-case class Query(raw: List[QueryParam] = Nil, matcher: QueryMatcher = Nil)
-
-case class RoutePath(path: Path = Path(), matcher: RouteMatcher = Nil)
 
 trait RouteRequest(val method: Method,
                    val uri: String,
-                   val route: RoutePath,
+                   val matcher: RouteMatcher,
                    val params: Params,
                    val query: Query)
 
