@@ -1,5 +1,5 @@
 val sharedSettings = Seq(
-  scalaVersion := "3.3.1",
+  scalaVersion := "3.4.0",
   name := "micro-routing",
   version := "0.0.1"
 )

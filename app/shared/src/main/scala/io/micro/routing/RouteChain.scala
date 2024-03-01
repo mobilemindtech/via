@@ -13,6 +13,7 @@ case class RouteException(message: String) extends Exception(message)
 
 object RouteChain:
 
+
   sealed trait Issue
 
   case class QueryIssue(name: String) extends Issue
@@ -33,11 +34,8 @@ object RouteChain:
                        query: Query = Query())
 
 
-  def doChain(target: String, routes: List[Route]): Result =
-    chain(Method.All, target, routes)
-
-  def chain(method: Method, target: String, routes: List[Route]): Result =
-    doChain(method, target, routes) match
+  def chain(target: String, routes: Seq[Route]): Result =
+    doChain(target, routes) match
       case Some(info) =>
 
         val issues =
@@ -52,7 +50,7 @@ object RouteChain:
 
       case None => NotFound()
 
-  private def doChain(method: Method, target: String, routes: Seq[Route]): Option[RouteInfo] =
+  private def doChain(target: String, routes: Seq[Route]): Option[RouteInfo] =
   
     val urlParts = target.split('?').toList
     val uri = urlParts.head
@@ -62,25 +60,20 @@ object RouteChain:
     def find(rts: List[Route]): Option[RouteInfo] =
       rts match
         case x :: xs =>
-          val pattern = x.pattern.get
-          val regex = Regex(pattern)
+          val regex = Regex(x.pattern)
           val results = regex.findAllIn(uri)
-  
-          val methodMatch =
-            method == x.method || method == Method.All || x.method == Method.All
-  
-          if !methodMatch || results.isEmpty
+
+          if results.isEmpty
           then
-            //println(s">> not match $target = $pattern, method = $methodMatch")
             find(xs)
           else
             val queries = parseQueries(x.path, getQuery(uriQuery))
             val query = queries |> mkQuery
   
             x.params match
-              case None | Some(Nil) =>
+              case Nil =>
                 Some(RouteInfo(x, mkRouteMatcher(x, Nil), Params(Nil), query))
-              case Some(pathParams) =>
+              case pathParams =>
   
                 val params = mutable.ListBuffer[Param]()
   
@@ -105,27 +98,26 @@ object RouteChain:
   
     find(routes.toList)
   
-  private def parseQueries(path: Path, targetQuery: Option[Map[String, String]]): List[QueryParam] = targetQuery match
-    case None => Nil
-    case Some(qs) => path.query match
+  private def parseQueries(path: Path, targetQuery: Map[String, String]): List[QueryParam] =
+    path.query match
       case Nil =>
-        qs.map { case (k, v) => QueryParam(k, QueryStr(v)) }.toList
+        targetQuery.map { case (k, v) => QueryParam(k, QueryStr(v)) }.toList
       case dslQueries =>
         dslQueries.map {
           case RouteQueryInt(name) =>
-            QueryParam(name, toQueryTypeOrError(findQueryValue(qs, name), toQueryIntOpt))
+            QueryParam(name, toQueryTypeOrError(findQueryValue(targetQuery, name), toQueryIntOpt))
           case RouteQueryLong(name) =>
-            QueryParam(name, toQueryTypeOrError(findQueryValue(qs, name), toQueryLongOpt))
+            QueryParam(name, toQueryTypeOrError(findQueryValue(targetQuery, name), toQueryLongOpt))
           case RouteQueryStr(name) =>
-            QueryParam(name, toQueryTypeOrError(findQueryValue(qs, name), toQueryStrOpt))
+            QueryParam(name, toQueryTypeOrError(findQueryValue(targetQuery, name), toQueryStrOpt))
           case RouteQueryBool(name) =>
-            QueryParam(name, toQueryTypeOrError(findQueryValue(qs, name), toQueryBoolOpt))
+            QueryParam(name, toQueryTypeOrError(findQueryValue(targetQuery, name), toQueryBoolOpt))
           case RouteQueryOpt(typ) =>
             typ match
-              case RouteQueryList(typ) => QueryParam(getQueryName(typ), toQueryOpt(qs, typ))
-              case _ => QueryParam(getQueryName(typ), toQueryOpt(qs, typ))
+              case RouteQueryList(lstType) => QueryParam(getQueryName(lstType), toQueryOpt(targetQuery, typ))
+              case _ => QueryParam(getQueryName(typ), toQueryOpt(targetQuery, typ))
           case RouteQueryList(typ) =>
-            (getQueryName(typ), toQueryList(qs, typ)) match
+            (getQueryName(typ), toQueryList(targetQuery, typ)) match
               case (name, QueryList(Nil)) => QueryParam(name, QueryInvalid())
               case (name, ql) => QueryParam(name, ql)
           case typ => throw RouteException(s"invalid route query type: ${typ}")
@@ -192,7 +184,7 @@ object RouteChain:
   private def findQueryValue(qs: Map[String, String], name: String): Option[String] =
     qs.find((k, _) => k == name).map(_._2)
   
-  private def getQuery(query: Option[String]): Option[Map[String, String]] =
+  private def getQuery(query: Option[String]): Map[String, String] =
     query match
       case Some(queries) =>
         queries
@@ -203,9 +195,8 @@ object RouteChain:
                 case k :: v :: Nil =>
                   acc + ((k, v))
                 case _ => acc
-          } |> Some.apply
-  
-      case None => None
+          }
+      case None => Map()
   
   private def mkQuery(queries: List[QueryParam]): Query =
     def extract(v: QueryType): Any = v match
@@ -214,14 +205,22 @@ object RouteChain:
       case QueryStr(v) => v
       case QueryBool(v) => v
       case QueryList(v) => v.map(extract)
-      case QueryOption(v) => v.map(extract)
+      case QueryOption(v) => v match
+        case Some(s) => Some(s |> extract)
+        case None => None
       case typ => throw RouteException(s"invalid route query type to extract: ${typ}")
   
     val matcher =
       queries.map:
         case QueryParam(name, value) =>
           extract(value).asInstanceOf[QueryMatcherType]
-    Query(queries, matcher)
+
+    val tuple =
+      queries.map:
+        case QueryParam(name, value) =>
+          (name, extract(value))
+
+    Query(queries, matcher, tuple.toSeq)
   
   private def mkRouteMatcher(route: Route, params: Seq[Param]): RouteMatcher =
     val matcher: RouteMatcher =

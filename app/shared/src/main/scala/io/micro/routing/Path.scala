@@ -2,6 +2,7 @@ package io.micro.routing
 
 import io.micro.routing.Path.paths
 import io.micro.routing.PathParamType.*
+import io.micro.routing.RouteQuery.{RouteQuery, RouteQueryVal}
 
 sealed trait PathDir()
 
@@ -20,6 +21,7 @@ enum RegexType:
 
 case class PathParamRegex(name: String, pattern: String, typ: RegexType)
 
+type RouteMatcher = List[PathRoot | PathEnd | String | Int | Long]
 
 object PathParamType:
 
@@ -36,7 +38,7 @@ object PathParamType:
     PathParamRegex(name, ".+", RegexType.RegexPaths)
 
   def regexraw(name: String, value: String): PathParamRegex =
-    PathParamRegex(name, value, RegexType.RegexPaths)
+    PathParamRegex(name, value, RegexType.RegexStr)
 
 case class Path(parts: List[PathDir] = Nil, query: List[RouteQuery] = Nil):
   infix def / (p: String): Path =

@@ -61,11 +61,61 @@ object RouteQuery:
 
   def q_list_long_opt(name: String): RouteQueryVal = RouteQueryOpt(RouteQueryList(RouteQueryLong(name)))
 
-case class Query(raw: List[QueryParam] = Nil, matcher: QueryMatcher = Nil)
+case class Query(raw: List[QueryParam] = Nil, 
+                 matcher: QueryMatcher = Nil,
+                 tuple: Seq[(String, Any)] = Nil):
+
+  def size: Int = raw.size
+
+  def empty: Boolean = size == 0
+
+  def nonEmpty: Boolean = !empty
+
+  def listStr(name: String): List[String] =
+    raw.find(_.name == name) match
+      case Some(QueryParam(_, QueryList(l: List[String]))) => l
+      case Some(QueryParam(_, QueryOption(Some(QueryList(l: List[String]))))) => l
+      case _ => Nil
+
+  def listInt(name: String): List[Int] =
+    raw.find(_.name == name) match
+      case Some(QueryParam(_, QueryList(l: List[Int]))) => l
+      case Some(QueryParam(_, QueryOption(Some(QueryList(l: List[Int]))))) => l
+      case _ => Nil
+
+  def listLong(name: String): List[Long] =
+    raw.find(_.name == name) match
+      case Some(QueryParam(_, QueryList(l: List[Long]))) => l
+      case Some(QueryParam(_, QueryOption(Some(QueryList(l: List[Long]))))) => l
+      case _ => Nil
+
+  def str(name: String): Option[String] =
+    raw.find(_.name == name) match
+      case Some(QueryParam(_, QueryStr(v))) => Some(v)
+      case Some(QueryParam(_, QueryOption(Some(QueryStr(v))))) => Some(v)
+      case _ => None
+
+  def int(name: String): Option[Int] =
+    raw.find(_.name == name) match
+      case Some(QueryParam(_, QueryInt(v))) => Some(v)
+      case Some(QueryParam(_, QueryOption(Some(QueryInt(v))))) => Some(v)
+      case _ => None
+
+  def long(name: String): Option[Long] =
+    raw.find(_.name == name) match
+      case Some(QueryParam(_, QueryLong(v))) => Some(v)
+      case Some(QueryParam(_, QueryOption(Some(QueryLong(v))))) => Some(v)
+      case _ => None
+
+  def bool(name: String): Option[Boolean] =
+    raw.find(_.name == name) match
+      case Some(QueryParam(_, QueryBool(v))) => Some(v)
+      case Some(QueryParam(_, QueryOption(Some(QueryBool(v))))) => Some(v)
+      case _ => None
+
 object Query:
   enum QueryType:
     case QueryStr(v: String) extends QueryType
-    case QueryRegex(v: String, regex: String) extends QueryType
     case QueryInt(v: Int) extends QueryType
     case QueryLong(v: Long) extends QueryType
     case QueryBool(v: Boolean) extends QueryType
@@ -74,10 +124,10 @@ object Query:
     case QueryInvalid() extends QueryType
   
   type QueryListType =
-    List[QueryStr | QueryRegex | QueryInt | QueryLong | QueryInvalid]
+    List[QueryStr | QueryInt | QueryLong | QueryInvalid]
   
   type QueryOptType =
-    Option[QueryStr | QueryRegex | QueryInt | QueryLong | QueryBool | QueryList]
+    Option[QueryStr | QueryInt | QueryLong | QueryBool | QueryList]
   
   case class QueryParam(name: String, value: QueryType)
   
