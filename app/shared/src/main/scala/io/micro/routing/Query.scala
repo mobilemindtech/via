@@ -1,7 +1,9 @@
 package io.micro.routing
 
-import io.micro.routing.Query.{QueryMatcher, QueryParam}
-import Query.QueryType._
+import io.micro.routing.Query.{QueryListType, QueryMatcher, QueryParam}
+import Query.QueryType.*
+
+import scala.reflect.TypeTest
 
 object RouteQuery:
 
@@ -71,46 +73,46 @@ case class Query(raw: List[QueryParam] = Nil,
 
   def nonEmpty: Boolean = !empty
 
-  def listStr(name: String): List[String] =
-    raw.find(_.name == name) match
-      case Some(QueryParam(_, QueryList(l: List[String]))) => l
-      case Some(QueryParam(_, QueryOption(Some(QueryList(l: List[String]))))) => l
+  def listStr(name: String)(using t: TypeTest[Any, List[String]]): List[String] =
+    tuple.find(_._1 == name) match
+      case Some((_, l @ t(v))) => l
+      case Some((_, Some(l @ t(v)))) => l
       case _ => Nil
 
-  def listInt(name: String): List[Int] =
-    raw.find(_.name == name) match
-      case Some(QueryParam(_, QueryList(l: List[Int]))) => l
-      case Some(QueryParam(_, QueryOption(Some(QueryList(l: List[Int]))))) => l
+  def listInt(name: String)(using t: TypeTest[Any, List[Int]]): List[Int] =
+    println(s"tuple = ${tuple}")
+    tuple.find(_._1 == name) match
+      case Some((_, l @ t(v))) => l
+      case Some((_, Some(l @ t(v)))) => l
       case _ => Nil
 
-  def listLong(name: String): List[Long] =
-    raw.find(_.name == name) match
-      case Some(QueryParam(_, QueryList(l: List[Long]))) => l
-      case Some(QueryParam(_, QueryOption(Some(QueryList(l: List[Long]))))) => l
+  def listLong(name: String)(using t: TypeTest[Any, List[Long]]): List[Long] =
+    tuple.find(_._1 == name) match
+      case Some((_, l @ t(v))) => l
+      case Some((_, Some(l @ t(v)))) => l
       case _ => Nil
 
   def str(name: String): Option[String] =
-    raw.find(_.name == name) match
-      case Some(QueryParam(_, QueryStr(v))) => Some(v)
-      case Some(QueryParam(_, QueryOption(Some(QueryStr(v))))) => Some(v)
+    tuple.find(_._1 == name) match
+      case Some((_, s: String)) => Some(s)
+      case Some((_, Some(s: String))) => Some(s)
       case _ => None
 
   def int(name: String): Option[Int] =
-    raw.find(_.name == name) match
-      case Some(QueryParam(_, QueryInt(v))) => Some(v)
-      case Some(QueryParam(_, QueryOption(Some(QueryInt(v))))) => Some(v)
+    tuple.find(_._1 == name) match
+      case Some((_, s: Int)) => Some(s)
+      case Some((_, Some(s: Int))) => Some(s)
       case _ => None
 
   def long(name: String): Option[Long] =
-    raw.find(_.name == name) match
-      case Some(QueryParam(_, QueryLong(v))) => Some(v)
-      case Some(QueryParam(_, QueryOption(Some(QueryLong(v))))) => Some(v)
+    tuple.find(_._1 == name) match
+      case Some((_, s: Long)) => Some(s)
+      case Some((_, Some(s: Long))) => Some(s)
       case _ => None
 
   def bool(name: String): Option[Boolean] =
-    raw.find(_.name == name) match
-      case Some(QueryParam(_, QueryBool(v))) => Some(v)
-      case Some(QueryParam(_, QueryOption(Some(QueryBool(v))))) => Some(v)
+    tuple.find(_._1 == name) match
+      case Some((_, s: Boolean)) => Some(s)
       case _ => None
 
 object Query:
