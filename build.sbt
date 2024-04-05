@@ -1,9 +1,18 @@
 val sharedSettings = Seq(
-  scalaVersion := "3.4.0",
+  scalaVersion := "3.4.1",
   name := "micro-routing",
   version := "0.0.1"
 )
 
+scalacOptions ++= Seq(
+  "-new-syntax",
+  "-no-indent",
+  "-Wvalue-discard",
+  "-Wunused:all",
+  "-Werror",
+  "-deprecation",
+  "-explain"
+)
 
 
 lazy val app =

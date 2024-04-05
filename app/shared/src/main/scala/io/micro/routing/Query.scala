@@ -8,18 +8,20 @@ import scala.reflect.TypeTest
 object RouteQuery:
 
   sealed trait RouteQuery
+
   
-  sealed trait RouteQueryVal(val name: String = "") extends RouteQuery
+  sealed trait RouteQueryVal extends RouteQuery:
+    val name: String = ""
   
-  case class RouteQueryStr(override val name: String) extends RouteQueryVal(name)
+  case class RouteQueryStr(override val name: String) extends RouteQueryVal
   
-  case class RouteQueryRegex(override val name: String, pattern: String) extends RouteQueryVal(name)
+  case class RouteQueryRegex(override val name: String, pattern: String) extends RouteQueryVal
   
-  case class RouteQueryInt(override val  name: String) extends RouteQueryVal(name)
+  case class RouteQueryInt(override val  name: String) extends RouteQueryVal
   
-  case class RouteQueryLong(override val  name: String) extends RouteQueryVal(name)
+  case class RouteQueryLong(override val  name: String) extends RouteQueryVal
   
-  case class RouteQueryBool(override val  name: String) extends RouteQueryVal(name)
+  case class RouteQueryBool(override val  name: String) extends RouteQueryVal
   
   type RouteQueryOptType =
     RouteQueryStr | RouteQueryRegex | RouteQueryInt | RouteQueryLong | RouteQueryBool | RouteQueryList

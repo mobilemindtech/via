@@ -18,15 +18,15 @@ object RouteChain:
 
   case class QueryIssue(name: String) extends Issue
 
-  sealed trait Result
+  sealed trait RouteResult
 
-  case class Ok(route: Route,
+  case class RouteFound(route: Route,
                 matcher: RouteMatcher,
                 params: Params,
                 query: Query,
-                issues: List[Issue] = Nil) extends Result
+                issues: List[Issue] = Nil) extends RouteResult
 
-  case class NotFound() extends Result
+  case class RouteNotFound() extends RouteResult
 
   case class RouteInfo(route: Route,
                        matcher: RouteMatcher,
@@ -34,7 +34,7 @@ object RouteChain:
                        query: Query = Query())
 
 
-  def chain(target: String, routes: Seq[Route]): Result =
+  def chain(target: String, routes: Seq[Route]): RouteResult =
     doChain(target, routes) match
       case Some(info) =>
 
@@ -46,9 +46,9 @@ object RouteChain:
             case _ => false
           }.map(s => QueryIssue(s.name))
 
-        Ok(info.route, info.matcher, info.params, info.query, issues)
+        RouteFound(info.route, info.matcher, info.params, info.query, issues)
 
-      case None => NotFound()
+      case None => RouteNotFound()
 
   private def doChain(target: String, routes: Seq[Route]): Option[RouteInfo] =
   

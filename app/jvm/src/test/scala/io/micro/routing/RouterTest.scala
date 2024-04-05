@@ -1,188 +1,126 @@
 package io.micro.routing
 
-import io.micro.routing.Route.route
 import io.micro.routing.Path.*
-import io.micro.routing.*
+import io.micro.routing.router.Router.{before, route}
+import io.micro.routing.router.{
+  Method,
+  RequestBuilder,
+  RouteEntry,
+  RouteInfo,
+  Router
+}
 import org.scalatest.funsuite.AnyFunSuite
-import RouteQuery.*
-import io.micro.routing.Query.QueryParam
-import io.micro.routing.RouteChain.{NotFound, Ok}
 
-class FirstSpec extends AnyFunSuite:
+import scala.concurrent.Future
 
-  def testPathParams(uri: String, routes: Seq[Route], expects: Param*) =
+type Headers = Map[String, String]
 
+case class Auth(username: String, token: String)
 
-    RouteChain.chain(uri, routes) match
+case class Request(
+    method: Method,
+    target: String,
+    params: Params,
+    query: Query,
+    matcher: RouteMatcher,
+    body: Option[String] = None,
+    headers: Headers = Map(),
+    auth: Option[Auth] = None
+)
 
-      case Ok(route, _, params, _, _) =>
+case class RequestExtra(body: Option[String] = None, headers: Headers = Map())
 
-        assert(expects.size == params.size,
-          s"wrong expected params count: ${expects.size} != ${params.size}")
+case class Response(
+    status: Int,
+    body: Option[String] = None,
+    contentType: Option[String] = None
+)
 
-        for i <- params.indices do
-          val found = params.at(i)
-          val expected = expects(i)
-          assert(found == expected,
-            s"wong param ${expected.name} expected ${expected}  != found ${found}")
+object Response:
+  def notFound: Response = Response(404)
+  def serverError: Response = Response(500)
+  def badRequest: Response = Response(400)
 
-      case NotFound() =>
-        fail(s"route $uri not found")
+  def unauthorized: Response = Response(401)
+  def ok: Response = Response(200)
 
-  def testQuery(uri: String, routes: Seq[Route], expects: (String, Any)*) =
+  def apply(status: Int, body: String): Response =
+    Response(status, Some(body), None)
 
+  def apply(status: Int, body: String, contentType: String): Response =
+    Response(status, Some(body), Some(contentType))
 
-    RouteChain.chain(uri, routes) match
-      case Ok(route, _, _, query, _) =>
+given RequestBuilder[Request, RequestExtra] with
+  override def build(
+      routeInfo: RouteInfo,
+      extra: Option[RequestExtra]
+  ): Request =
+    Request(
+      routeInfo.method,
+      routeInfo.target,
+      routeInfo.params,
+      routeInfo.query,
+      routeInfo.matcher,
+      body = extra.flatMap(_.body),
+      headers = extra.map(_.headers).getOrElse(Map())
+    )
 
-        assert(expects.size == query.size,
-          s"wrong expected params count: ${expects.size} != ${query.size}")
+// sbt testOnly *RouterTest
+class RouterTest extends AnyFunSuite:
 
-        for tp <- expects do
-          query.tuple.find(_._1 == tp._1) match
-            case Some(found)=>
-              val expected = tp._2
-              assert(found._2 == expected,
-                s"wong param ${found._1} expected ${expected} != found ${found}")
-            case None => fail(s"query ${tp._1} not found")
+  val users = Map(
+    "123456" -> "jonh@gmail.com"
+  )
 
+  test("router GET /") {
 
-      case NotFound() =>
-        fail(s"route $uri not found")
-
-  def testNotFound(uri: String, routes: Route*) =
-    val r = RouteChain.chain(uri, routes)
-    assert(r == NotFound(), s"expected not found route to uri ${uri}")
-
-
-  test("route compile"){
-    val home = root |> route
-    val test = root / "test" |> route
-    val testGet = test / int("id") |> route
-    assert(home.pattern == "^/$", "wrong compile home")
-    assert(test.pattern == "^/test$", "wrong compile test")
-    assert(test.pure, "route should be pure")
-    assert(testGet.pattern == "^/test/([0-9]+)$", "wrong compile testGet")
-    assert(!testGet.pure, "route cannot be pure")
-  }
-
-  test("route process found param int v1") {
-    val r = root / "test" / int("id") |> route
-    testPathParams("/test/22", r :: Nil, ParamInt("id", 22))
-  }
-
-  test("route process found param int v2") {
-    val r = root / "test" / int("id") |> route
-    testPathParams("/test/22", r :: Nil, ParamInt("id", 22))
-  }
-
-  test("route process found param two int") {
-    val test = root / "test" / int("id") / int("id2") |> route
-    assert(test.pattern == "^/test/([0-9]+)/([0-9]+)$", "wrong compile test two path params")
-    testPathParams("/test/22/100", test :: Nil, ParamInt("id", 22), ParamInt("id2", 100))
-  }
-
-  test("route process found param string") {
-    val test = root / "test" / param("name") |> route
-    assert(test.pattern == "^/test/(.+)$", "wrong compile test param string")
-    testPathParams("/test/john", test :: Nil, ParamStr("name", "john"))
-  }
-
-  test("route process found param string + path") {
-    val test = root / "test" / param("name") / "show" |> route
-    assert(test.pattern == "^/test/(.+)/show$", "wrong compile test param string")
-    testPathParams("/test/john/show", test :: Nil, ParamStr("name", "john"))
-  }
-
-  test("route process found param int string") {
-    val test = root / "test" / int("id") / param("name") |> route
-    assert(test.pattern == "^/test/([0-9]+)/(.+)$", "wrong compile test two path params")
-    testPathParams("/test/22/john", test :: Nil, ParamInt("id", 22), ParamStr("name", "john"))
-  }
-
-  test("route process found param tail") {
-    val test = root / "test" / int("id") / tail("paths") |> route
-    assert(test.pattern == "^/test/([0-9]+)/(.+)$", "wrong compile test two path params")
-    testPathParams("/test/22/john/do/ok",
-      test :: Nil, ParamInt("id", 22), ParamPaths("paths", "john" :: "do" :: "ok" :: Nil))
-  }
-
-  test("route chain regex") {
-    val test = root / "test" / regex("date", "[0-9]{4,4}-[0-9]{2,2}-[0-9]{2,2}") |> route
-    assert(test.pattern == "^/test/([0-9]{4,4}-[0-9]{2,2}-[0-9]{2,2})$", "wrong route")
-    testPathParams("/test/2024-02-01", test :: Nil, ParamStr("date", "2024-02-01"))
-    testNotFound("/test/02-01-2024", test)
-  }
-
-  test("route chain query int") {
-    val test = root / "test" /? q_int("id") |> route
-    assert(test.pattern == "^/test/$", "wrong route")
-    testQuery("/test/?id=22", test :: Nil, ("id", 22))
-  }
-
-  test("route chain query int and bool") {
-    val test = root / "test" /? q_int("id") & q_bool("enabled") |> route
-    assert(test.pattern == "^/test/$", "wrong route")
-    testQuery("/test/?id=90&enabled=true", test :: Nil, ("id", 90), ("enabled", true))
-  }
-
-  test("route chain query int and bool str") {
-    val test = root / "test" /? q_int("id") & q_bool("enabled") & q_str("name") |> route
-    assert(test.pattern == "^/test/$", "wrong route")
-    testQuery("/test/?id=90&enabled=true&name=ricardo", test :: Nil, ("id", 90), ("enabled", true), ("name", "ricardo"))
-  }
-
-  test("route chain query list") {
-    val test = root / "test" /? q_list_int("ids") |> route
-    assert(test.pattern == "^/test/$", "wrong route")
-    testQuery("/test/?ids=1,2,3,4,5", test :: Nil, ("ids", List(1,2,3,4,5)))
-  }
-
-  test("route chain query list option") {
-    val test = root / "test" /? q_list_int_opt("ids") |> route
-    assert(test.pattern == "^/test/$", "wrong route")
-    testQuery("/test/?ids=1,2,3,4,5", test :: Nil, ("ids", Some(List(1, 2, 3, 4, 5))))
-    testQuery("/test/", test :: Nil, ("ids", None))
-  }
-
-  test("route chain query get values") {
-
-    val chain: (String, Route) => (Query => Unit) => Unit   = { (uri, route) => f =>
-      RouteChain.chain(uri, route :: Nil) match
-        case Ok(route, _, _, query, _) =>
-          f(query)
-        case NotFound() => fail("not found")
-
+    val entry = route(Method.Get, root) { (req: Request) =>
+      Response(200, "OK", "text/plain")
     }
 
-    val test1 = root / "test" /? q_list_int_opt("ids") |> route
-    chain("/test/", test1) {
-      q => assert(q.listInt("ids") == Nil, "ids should be Nil")
+    val router = Router[Request, Response, RequestExtra](entry)
+
+    router.dispatch(Method.Get, "/", None) match
+      case Some(resp) =>
+        assert(resp.body.contains("OK"), "expected response OK")
+      case None => fail("resp can't be none")
+  }
+
+  test("router GET  with middleware") {
+
+    val index = route(Method.Get, root) { (req: Request) =>
+      Response(200, s"hello ${req.auth.get.username}", "text/plain")
     }
 
-    val test2 = root / "test" /? q_list_int_opt("ids") |> route
-    chain("/test/?ids=1,2,3", test2) {
-      q => assert(q.listInt("ids") == List(1,2,3), "ids should be 1,2,3")
+    val auth = before { (req: Request) =>
+      req.headers.get("Authorization") match
+        case Some(token) =>
+          users.get(token) match
+            case Some(username) =>
+              val auth = Auth(username, token) |> Some.apply
+              req.copy(auth = auth)
+            case _ => Response.unauthorized
+        case _ => Response.unauthorized
     }
 
-    val test3 = root / "test" /? q_list_int("ids") |> route
-    chain("/test/?ids=1,2,3", test3) {
-      q => assert(q.listInt("ids") == List(1, 2, 3), "ids should be 1,2,3")
-    }
+    val authIndex = auth ++ index
 
-    val test4 = root / "test" /? q_bool("test") |> route
-    chain("/test/?test=true", test4) {
-      q => assert(q.bool("test").contains(true), "ids should be true")
-    }
+    val router = Router[Request, Response, RequestExtra](authIndex)
+    val extra = RequestExtra(headers = Map("Authorization" -> "123456"))
+    router.dispatch(Method.Get, "/", Some(extra)) match
+      case Some(resp) =>
+        assert(
+          resp.body.contains("hello jonh@gmail.com"),
+          "expected response hello jonh@gmail.com"
+        )
+      case None => fail("resp can't be none")
 
-    val test5 = root / "test" /? q_str("name") |> route
-    chain("/test/?name=ricardo", test5) {
-      q => assert(q.str("name").contains("ricardo"), "name should be true")
-    }
-
-    val test6 = root / "test" /? q_str_opt("name") |> route
-    chain("/test/?name=ricardo", test6) {
-      q => assert(q.str("name").contains("ricardo"), "name should be true")
-    }
+    router.dispatch(Method.Get, "/", None) match
+      case Some(resp) =>
+        assert(
+          resp.status == 401,
+          "expected response status 401"
+        )
+      case None => fail("resp can't be none")
 
   }
