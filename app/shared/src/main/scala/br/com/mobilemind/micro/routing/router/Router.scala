@@ -1,7 +1,7 @@
-package io.micro.routing.router
+package br.com.mobilemind.micro.routing.router
 
-import io.micro.routing.RouteChain.{RouteFound, RouteNotFound}
-import io.micro.routing.*
+import br.com.mobilemind.micro.routing.RouteChain.{RouteFound, RouteNotFound}
+import br.com.mobilemind.micro.routing.*
 
 import scala.annotation.tailrec
 import scala.reflect.TypeTest
@@ -157,7 +157,7 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
 object Router:
 
   def verbs(methods: Method*): Seq[Method] = methods
-  
+
   def route[Req, Resp](
       path: Path,
       c: Controller[Req, Resp]

@@ -1,4 +1,4 @@
-package io.micro.routing.router
+package br.com.mobilemind.micro.routing.router
 
 trait Controller[Req, Resp]:
 
@@ -18,13 +18,9 @@ trait Controller[Req, Resp]:
 
   def patch(req: Req): Maybe = ()
 
-  def handle(req: Req) : Maybe = ()
+  def handle(req: Req): Maybe = ()
 
 trait Handler[Req, Resp]:
 
   // handler all methods
-  def handle(req: Req) : Resp
-
-
-
-
+  def handle(req: Req): Resp

@@ -1,6 +1,6 @@
-package io.micro.routing.router
+package br.com.mobilemind.micro.routing.router
 
-import io.micro.routing.Route
+import br.com.mobilemind.micro.routing.Route
 
 enum Method(val verb: String):
   case Get extends Method("GET")

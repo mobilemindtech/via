@@ -1,8 +1,8 @@
-package io.micro.routing
+package br.com.mobilemind.micro.routing
 
-import io.micro.routing.Path.paths
-import io.micro.routing.PathParamType.*
-import io.micro.routing.RouteQuery.{RouteQuery, RouteQueryVal}
+import br.com.mobilemind.micro.routing.Path.paths
+import br.com.mobilemind.micro.routing.PathParamType.{regexany, regexint, regexlong, regexpaths, regexraw}
+import br.com.mobilemind.micro.routing.RouteQuery.{RouteQuery, RouteQueryVal}
 
 sealed trait PathDir()
 

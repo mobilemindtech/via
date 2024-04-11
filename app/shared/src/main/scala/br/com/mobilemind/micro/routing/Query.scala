@@ -1,6 +1,6 @@
-package io.micro.routing
+package br.com.mobilemind.micro.routing
 
-import io.micro.routing.Query.{QueryListType, QueryMatcher, QueryParam}
+import br.com.mobilemind.micro.routing.Query.{QueryListType, QueryMatcher, QueryParam}
 import Query.QueryType.*
 
 import scala.reflect.TypeTest

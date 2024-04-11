@@ -1,5 +1,7 @@
-package io.micro.routing
+package br.com.mobilemind.micro.routing
 
+import br.com.mobilemind.micro.routing
+import io.micro.routing.{Params, Query}
 import io.micro.routing.Path.*
 import io.micro.routing.router.Router.{after, before, route, verbs}
 import io.micro.routing.router.{Method, RequestBuilder, RouteEntry, RouteInfo, Router}
@@ -59,7 +61,7 @@ given RequestBuilder[Request, RequestExtra] with
       routeInfo: RouteInfo,
       extra: Option[RequestExtra]
   ): Request =
-    Request(
+    routing.Request(
       routeInfo.method,
       routeInfo.target,
       routeInfo.params,

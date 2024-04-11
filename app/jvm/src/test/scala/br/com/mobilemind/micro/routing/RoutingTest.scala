@@ -1,4 +1,4 @@
-package io.micro.routing
+package br.com.mobilemind.micro.routing
 
 import io.micro.routing.*
 import io.micro.routing.Path.*

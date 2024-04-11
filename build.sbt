@@ -1,6 +1,7 @@
 val sharedSettings = Seq(
   scalaVersion := "3.4.1",
   name := "micro-routing",
+  organization := "br.com.mobilemind",
   version := "0.0.1"
 )
 
