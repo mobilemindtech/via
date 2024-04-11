@@ -14,6 +14,7 @@ scalacOptions ++= Seq(
   "-explain"
 )
 
+javacOptions ++= Seq("-source", "22", "-target", "22")
 
 lazy val app =
   // select supported platforms
@@ -21,17 +22,17 @@ lazy val app =
     .crossType(CrossType.Full) // [Pure, Full, Dummy], default: CrossType.Full
     .withoutSuffixFor(JVMPlatform)
     .settings(sharedSettings)
-    .jsSettings(/* ... */) // defined in sbt-scalajs-crossproject
+    .jsSettings( /* ... */ ) // defined in sbt-scalajs-crossproject
     .jvmSettings(
       libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.17" % "test"
     )
     // configure Scala-Native settings
-    .nativeSettings(/* ... */) // defined in sbt-scala-native
+    .nativeSettings( /* ... */ ) // defined in sbt-scala-native
 
-lazy val root = project.in(file(".")).
-  aggregate(app.js, app.jvm, app.native).
-  settings(
+lazy val root = project
+  .in(file("."))
+  .aggregate(app.js, app.jvm, app.native)
+  .settings(
     publish := {},
-    publishLocal := {},
+    publishLocal := {}
   )
-

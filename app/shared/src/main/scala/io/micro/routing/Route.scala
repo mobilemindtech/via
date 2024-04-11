@@ -1,16 +1,22 @@
 package io.micro.routing
 
+import io.micro.routing.router.Method
+
 import scala.collection.mutable
 
-case class Route(path: Path,
-                 pattern: String = "",
-                 pure: Boolean = false, // if has not params and query
-                 params: List[PathParam] = Nil):
+case class Route(
+    path: Path,
+    pattern: String = "",
+    pure: Boolean = false, // if has not params and query
+    params: List[PathParam] = Nil,
+    methods: Seq[Method] = Nil,
+    tag: Option[Any] = None
+):
 
-  infix def / (p: Path): Path =
+  infix def /(p: Path): Path =
     path.copy(parts = path.parts ::: p.parts)
 
-  def compile : Route =
+  def compile: Route =
 
     val params = mutable.ListBuffer[PathParam]()
 
@@ -18,10 +24,10 @@ case class Route(path: Path,
       path.parts
         .map[String]:
           case _: PathRoot => ""
-          case _: PathEnd => "/$"
-          case _: PathAny => "/(.+)$"
-          case p : PathPart => s"/${p.path}"
-          case p : PathParam =>
+          case _: PathEnd  => "/$"
+          case _: PathAny  => "/(.+)$"
+          case p: PathPart => s"/${p.path}"
+          case p: PathParam =>
             params.append(p)
             p.regex match
               case PathParamRegex(_, pattern, _) => s"/($pattern)" // (group)
@@ -37,11 +43,7 @@ case class Route(path: Path,
           else s"^$str$$"
 
     val pars = params.toList
-    copy(
-      pattern = ptrn,
-      params = pars,
-      pure = pars.isEmpty)
-
+    copy(pattern = ptrn, params = pars, pure = pars.isEmpty)
 
 object Route:
 

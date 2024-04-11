@@ -24,15 +24,20 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
     ttResp: TypeTest[Any, Resp]
 ):
 
-  def dispatch(target: String, extra: Option[Extra]): Option[Resp] =
+  def dispatch(target: String, extra: Extra): Option[Resp] =
     dispatch(Method.Any, target, extra)
+
+  def dispatch(method: Method, target: String, extra: Extra): Option[Resp] =
+    doDispatch(method, target, Some(extra))
+
+  def dispatch(target: String): Option[Resp] =
+    dispatch(Method.Any, target)
 
   def dispatch(
       method: Method,
-      target: String,
-      extra: Option[Extra]
+      target: String
   ): Option[Resp] =
-    doDispatch(method, target, extra)
+    doDispatch(method, target, None)
 
   private def doDispatch(
       method: Method,
@@ -40,8 +45,13 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
       extra: Option[Extra]
   ): Option[Resp] =
 
-    val rts = routes.map(_.route)
-    RouteChain.chain(target, rts) match
+    val rts = routes.map { entry =>
+      entry.route.copy(
+        methods = entry.methods,
+        tag = Some(entry)
+      )
+    }
+    RouteChain.chain(method, target, rts) match
       case routeFound: RouteFound =>
         doDispatch(method, target, routeFound, extra)
       case RouteNotFound() => None
@@ -54,160 +64,183 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
   ): Option[Resp] =
 
     val route = routeFound.route
-    val entry = routes.find(_.route == route).get
+    val entry = route.tag.get.asInstanceOf[RouteEntry[Req, Resp]]
 
-    val methodAllow =
-      entry.method == Method.Any || method == Method.Any || entry.method == method
-
-    if !methodAllow
-    then None
-    else
-      val routeInfo = RouteInfo(
-        method,
-        target,
-        routeFound.matcher,
-        routeFound.params,
-        routeFound.query
-      )
-      val req = builder.build(routeInfo, extra)
+    val routeInfo = RouteInfo(
+      method,
+      target,
+      routeFound.matcher,
+      routeFound.params,
+      routeFound.query
+    )
+    val req = builder.build(routeInfo, extra)
+    val resp =
       entry match
         case r: RouteEntryHandler[Req, Resp] =>
           val resp =
-            middlewareBefore(req, r.before) match
+            middlewareBefore(method, req, r.before) match
               case newReq: Req =>
                 r.handler.handle(newReq)
               case resp: Resp => resp
 
-          middlewareAfter(resp, r.after) |> Some.apply
+          resp |> Some.apply
 
         case r: RouteEntryDispatcher[Req, Resp] =>
           val resp =
-            middlewareBefore(req, r.before) match
+            middlewareBefore(method, req, r.before) match
               case ttReq(newReq) =>
                 r.dispatcher(newReq)
               case ttResp(resp) => resp
 
-          middlewareAfter(resp, r.after) |> Some.apply
+          resp |> Some.apply
 
         case r: RouteEntryController[Req, Resp] =>
-          val resp =
-            middlewareBefore(req, r.before) match
-              case ttResp(resp) => resp |> Some.apply
-              case ttReq(newReq) =>
-                val crlResult =
-                  method match
-                    case Method.Get     => r.controller.get(newReq)
-                    case Method.Post    => r.controller.post(newReq)
-                    case Method.Put     => r.controller.put(newReq)
-                    case Method.Delete  => r.controller.delete(newReq)
-                    case Method.Options => r.controller.options(newReq)
-                    case Method.Head    => r.controller.head(newReq)
-                    case Method.Patch   => r.controller.patch(newReq)
-                    case Method.Any     => ()
-                crlResult match
-                  case resp: Resp => resp |> Some.apply
-                  case _: Unit    => // not found
-                    // try default handler
-                    r.controller.handle(newReq) match
-                      case _: Unit    => None // not found
-                      case resp: Resp => resp |> Some.apply
+          middlewareBefore(method, req, r.before) match
+            case ttResp(resp) => resp |> Some.apply
+            case ttReq(newReq) =>
+              val crlResult =
+                method match
+                  case Method.Get     => r.controller.get(newReq)
+                  case Method.Post    => r.controller.post(newReq)
+                  case Method.Put     => r.controller.put(newReq)
+                  case Method.Delete  => r.controller.delete(newReq)
+                  case Method.Options => r.controller.options(newReq)
+                  case Method.Head    => r.controller.head(newReq)
+                  case Method.Patch   => r.controller.patch(newReq)
+                  case Method.Any     => ()
+              crlResult match
+                case resp: Resp => resp |> Some.apply
+                case _: Unit    => // not found
+                  // try default handler
+                  r.controller.handle(newReq) match
+                    case _: Unit    => None // not found
+                    case resp: Resp => resp |> Some.apply
 
-          resp match
-            case Some(rsp) =>
-              middlewareAfter(rsp, r.after) |> Some.apply
-            case _ => None // not found
+    resp match
+      case Some(rsp) =>
+        middlewareAfter(method, req, rsp, entry.after) |> Some.apply
+      case None => None
 
   @tailrec
   private def middlewareBefore(
+      method: Method,
       req: Req,
       beforeOpt: Option[Before[Req, Resp]]
   ): Resp | Req =
     beforeOpt match
       case Some(before) =>
-        before.handler(req) match
-          case ttReq(newReq) =>
-            middlewareBefore(newReq, before.next)
-          case ttResp(resp) =>
-            resp
+        if before.methods.exists(m => m == Method.Any || m == method)
+        then
+          before.handler(req) match
+            case ttReq(newReq) =>
+              middlewareBefore(method, newReq, before.next)
+            case ttResp(resp) =>
+              resp
+        else middlewareBefore(method, req, before.next)
       case _ => req
 
   private def middlewareAfter(
+      method: Method,
+      req: Req,
       resp: Resp,
       afterOpt: Option[After[Req, Resp]]
   ): Resp =
     afterOpt match
       case Some(after) =>
-        after.handler(resp)
+        val newResp =
+          if after.methods.exists(m => m == Method.Any || m == method)
+          then after.handler(req, resp)
+          else resp
+        middlewareAfter(method, req, newResp, after.next)
       case _ => resp
 
 object Router:
 
+  def verbs(methods: Method*): Seq[Method] = methods
+  
   def route[Req, Resp](
       path: Path,
       c: Controller[Req, Resp]
   ): RouteEntry[Req, Resp] =
     route(Method.Any, path, c)
 
-  def route[Req, Resp](path: Path)(
-      f: Dispatcher[Req, Resp]
+  def route[Req, Resp](
+      method: Method,
+      path: Path,
+      c: Controller[Req, Resp]
   ): RouteEntry[Req, Resp] =
-    route(Method.Any, path)(f)
+    route(method :: Nil, path, c)
+
+  def route[Req, Resp](
+      methods: Seq[Method],
+      path: Path,
+      c: Controller[Req, Resp]
+  ): RouteEntry[Req, Resp] =
+    RouteEntryController(methods, Route.route(path), controller = c)
 
   def route[Req, Resp](path: Path)(
       c: Handler[Req, Resp]
   ): RouteEntry[Req, Resp] =
     route(Method.Any, path)(c)
 
-  def route[Req, Resp](
-      method: Method,
-      path: Path,
-      c: Controller[Req, Resp]
-  ): RouteEntry[Req, Resp] =
-    RouteEntryController(method, Route.route(path), controller = c)
-
   def route[Req, Resp](method: Method, path: Path)(
+      c: Handler[Req, Resp]
+  ): RouteEntry[Req, Resp] =
+    route(method :: Nil, path)(c)
+
+  def route[Req, Resp](methods: Seq[Method], path: Path)(
       f: Handler[Req, Resp]
   ): RouteEntry[Req, Resp] =
-    RouteEntryHandler(method, Route.route(path), handler = f)
+    RouteEntryHandler(methods, Route.route(path), handler = f)
+
+  def route[Req, Resp](path: Path)(
+      f: Dispatcher[Req, Resp]
+  ): RouteEntry[Req, Resp] =
+    route(Method.Any, path)(f)
 
   def route[Req, Resp](method: Method, path: Path)(
       f: Dispatcher[Req, Resp]
   ): RouteEntry[Req, Resp] =
-    RouteEntryDispatcher(method, Route.route(path), dispatcher = f)
+    route(method :: Nil, path)(f)
+
+  def route[Req, Resp](methods: Seq[Method], path: Path)(
+      f: Dispatcher[Req, Resp]
+  ): RouteEntry[Req, Resp] =
+    RouteEntryDispatcher(methods, Route.route(path), dispatcher = f)
 
   def route[Req, Resp](
-      method: Method,
+      methods: Seq[Method],
       r: Route,
       c: Controller[Req, Resp]
   ): RouteEntry[Req, Resp] =
-    RouteEntryController(method, r, controller = c)
+    RouteEntryController(methods, r, controller = c)
 
   def route[Req, Resp](
-      method: Method,
+      methods: Seq[Method],
       r: Route,
       c: Handler[Req, Resp]
   ): RouteEntry[Req, Resp] =
-    RouteEntryHandler(method, r, handler = c)
+    RouteEntryHandler(methods, r, handler = c)
 
-  def route[Req, Resp](method: Method, r: Route)(
+  def route[Req, Resp](methods: Seq[Method], r: Route)(
       f: Dispatcher[Req, Resp]
   ): RouteEntry[Req, Resp] =
-    RouteEntryDispatcher(method, r, dispatcher = f)
+    RouteEntryDispatcher(methods, r, dispatcher = f)
 
-  def after[Req, Resp](method: Method)(
+  def after[Req, Resp](methods: Method*)(
       dispatch: MiddlewareAfter[Req, Resp]
   ): After[Req, Resp] =
-    After(method, dispatch)
+    After(methods, dispatch)
 
   def after[Req, Resp](dispatch: MiddlewareAfter[Req, Resp]): After[Req, Resp] =
-    After(Method.Any, dispatch)
+    After(Method.Any :: Nil, dispatch)
 
-  def before[Req, Resp](method: Method)(
+  def before[Req, Resp](methods: Method*)(
       dispatch: MiddlewareBefore[Req, Resp]
   ): Before[Req, Resp] =
-    Before(method, dispatch)
+    Before(methods, dispatch)
 
   def before[Req, Resp](
       dispatch: MiddlewareBefore[Req, Resp]
   ): Before[Req, Resp] =
-    Before(Method.Any, dispatch)
+    Before(Method.Any :: Nil, dispatch)
