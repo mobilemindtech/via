@@ -250,11 +250,17 @@ class RouterTest extends AnyFunSuite:
         Response(200, s"people/${req.params.str("name").get}")
     }
 
+    val tail = route[Request, ResponseBase](Method.Get, "/head/*") {
+      (req: Request) =>
+        Response(200, s"head/${req.params.tail("paths").mkString(",")}")
+    }
+
     val router = Router[Request, ResponseBase, RequestExtra](
       index,
       users,
       userGet,
-      peopleName
+      peopleName,
+      tail
     )
 
     router.dispatch(Method.Get, "/") match
@@ -286,6 +292,14 @@ class RouterTest extends AnyFunSuite:
         assert(
           resp.body.contains("people/ricardo"),
           "expected response people/ricardo"
+        )
+      case _ => fail("resp can't be none")
+
+    router.dispatch(Method.Get, "/head/a/b/c") match
+      case Some(resp: ResponseText) =>
+        assert(
+          resp.body.contains("head/a,b,c"),
+          "expected response head/a,b,c"
         )
       case _ => fail("resp can't be none")
 

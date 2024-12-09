@@ -7,25 +7,37 @@ Minimalistic scala routing
 ```scala
 
 // /test/?ids=123
-val test = route(root / "test" /? q_list_int("ids"))
+route(root / "test" /? q_list_int("ids")) { req => ??? }
 
 // /test/?id=1&enabled=true
-val test = route(root / "test" /? q_int("id") & q_bool("enabled"))
+route(root / "test" /? q_int("id") & q_bool("enabled")) { req => ??? }
 
 // /test/2024-01-01
-val test = route(root / "test" / regex("date", "[0-9]{4,4}-[0-9]{2,2}-[0-9]{2,2}"))
+route(root / "test" / regex("date", "[0-9]{4,4}-[0-9]{2,2}-[0-9]{2,2}")) { req => ??? }
 
 // /test/1/any/thing
-val test = route(root / "test" / int("id") / tail("paths"))
+route(root / "test" / int("id") / tail("paths")) { req => ??? }
 
 // /test/john/show
-val test = route(root / "test" / param("name") / "show")
+route(root / "test" / param("name") / "show") { req => ??? }
 
 // /test/1/2
-val test = route(root / "test" / int("id") / int("id2"))
+route(root / "test" / int("id") / int("id2")) { req => ??? }
+
+// /
+route(Get, "/")
+
+// /user/1 => req.params.str("id") == Some("1")
+route(Get, "/user/:id") { req => ??? }
+
+// /user/1 => req.params.int("id") == Some(1)
+route(Get, "/user/:id(int)") { req => ??? }
+
+// /user/a/b => req.params.tail("paths") == List("a", "b")
+route(Get, "/user/*") { req => ??? }
 
 // process target 
-RouteChain.chain(uri, routes) match
+RouteChain.chain(uri, Seq(routeA, routeB)) match
   case Ok(route, matcher, params, query, issues) =>
     // found
   case NotFound()
