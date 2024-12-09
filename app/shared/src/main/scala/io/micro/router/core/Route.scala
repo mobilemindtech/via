@@ -1,6 +1,6 @@
-package br.com.mobilemind.micro.routing
+package io.micro.router.core
 
-import br.com.mobilemind.micro.routing.router.Method
+import io.micro.router.core.Method
 
 import scala.collection.mutable
 

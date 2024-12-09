@@ -1,7 +1,7 @@
 val sharedSettings = Seq(
-  scalaVersion := "3.4.1",
-  name := "micro-routing",
-  organization := "br.com.mobilemind",
+  scalaVersion := "3.6.2-RC3",
+  name := "micro-router",
+  organization := "io.micro.router",
   version := "0.0.1"
 )
 
@@ -15,7 +15,7 @@ scalacOptions ++= Seq(
   "-explain"
 )
 
-javacOptions ++= Seq("-source", "22", "-target", "22")
+javacOptions ++= Seq("-source", "23", "-target", "23")
 
 lazy val app =
   // select supported platforms
@@ -25,7 +25,7 @@ lazy val app =
     .settings(sharedSettings)
     .jsSettings( /* ... */ ) // defined in sbt-scalajs-crossproject
     .jvmSettings(
-      libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.17" % "test"
+      libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test"
     )
     // configure Scala-Native settings
     .nativeSettings( /* ... */ ) // defined in sbt-scala-native

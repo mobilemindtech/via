@@ -1,16 +1,7 @@
-package br.com.mobilemind.micro.routing.router
+package io.micro.router
 
-import br.com.mobilemind.micro.routing.Route
-
-enum Method(val verb: String):
-  case Get extends Method("GET")
-  case Post extends Method("POST")
-  case Put extends Method("PUT")
-  case Delete extends Method("DELETE")
-  case Patch extends Method("PATCH")
-  case Head extends Method("HEAD")
-  case Options extends Method("OPTIONS")
-  case Any extends Method("ANY")
+import io.micro.router.core.Route
+import io.micro.router.core.Method
 
 type Dispatcher[Req, Resp] = Req => Resp
 

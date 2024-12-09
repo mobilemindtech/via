@@ -1,7 +1,8 @@
-package br.com.mobilemind.micro.routing.router
+package io.micro.router
 
-import br.com.mobilemind.micro.routing.RouteChain.{RouteFound, RouteNotFound}
-import br.com.mobilemind.micro.routing.*
+import io.micro.router.core.RouteChain.{RouteFound, RouteNotFound}
+import io.micro.router.core.*
+import io.micro.router.core.Method
 
 import scala.annotation.tailrec
 import scala.reflect.TypeTest
@@ -139,6 +140,7 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
         else middlewareBefore(method, req, before.next)
       case _ => req
 
+  @tailrec
   private def middlewareAfter(
       method: Method,
       req: Req,

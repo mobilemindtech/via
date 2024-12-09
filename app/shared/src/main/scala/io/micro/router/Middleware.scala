@@ -1,4 +1,6 @@
-package br.com.mobilemind.micro.routing.router
+package io.micro.router
+
+import io.micro.router.core.Method
 
 type MiddlewareBefore[Req, Resp] = Req => Req | Resp
 type MiddlewareAfter[Req, Resp] = (Req, Resp) => Resp

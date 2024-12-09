@@ -1,8 +1,7 @@
-package br.com.mobilemind.micro.routing
+package io.micro.router.core
 
-import br.com.mobilemind.micro.routing.Path.paths
-import br.com.mobilemind.micro.routing.PathParamType.{regexany, regexint, regexlong, regexpaths, regexraw}
-import br.com.mobilemind.micro.routing.RouteQuery.{RouteQuery, RouteQueryVal}
+import PathParamType.{regexany, regexint, regexlong, regexpaths, regexraw}
+import RouteQuery.{RouteQuery, RouteQueryVal}
 
 sealed trait PathDir()
 
@@ -41,24 +40,23 @@ object PathParamType:
     PathParamRegex(name, value, RegexType.RegexStr)
 
 case class Path(parts: List[PathDir] = Nil, query: List[RouteQuery] = Nil):
-  infix def / (p: String): Path =
+  infix def /(p: String): Path =
     copy(parts = parts :+ PathPart(p))
 
-  infix def / (p: Path): Path =
+  infix def /(p: Path): Path =
     copy(parts = parts ::: p.parts)
 
-  infix def / (p: PathParam): Path =
+  infix def /(p: PathParam): Path =
     copy(parts = parts :+ p)
 
-  infix def ? (value: RouteQueryVal): Path =
+  infix def ?(value: RouteQueryVal): Path =
     copy(query = value :: Nil)
 
-  infix def /? (value: RouteQueryVal): Path =
+  infix def /?(value: RouteQueryVal): Path =
     copy(parts = parts :+ PathEnd(), query = value :: Nil)
 
-  infix def & (value: RouteQueryVal): Path =
+  infix def &(value: RouteQueryVal): Path =
     copy(query = query :+ value)
-
 
 object Path:
   def apply(parts: PathDir*): Path = Path(parts.toList)
@@ -73,10 +71,10 @@ object Path:
   infix def any: Path =
     Path(PathAny())
 
-  infix def / (route: Route, path: Path): Path =
+  infix def /(route: Route, path: Path): Path =
     route.path / path
 
-  infix def / (route: Route, path: String): Path =
+  infix def /(route: Route, path: String): Path =
     route.path / path
 
   infix def int(name: String): Path =

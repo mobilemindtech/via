@@ -1,4 +1,4 @@
-package br.com.mobilemind.micro.routing
+package io.micro.router.core
 
 sealed trait Param:
   val name: String

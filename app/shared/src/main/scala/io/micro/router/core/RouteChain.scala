@@ -1,10 +1,9 @@
-package br.com.mobilemind.micro.routing
+package io.micro.router.core
 
 import Query.QueryType.*
-import br.com.mobilemind.micro.routing.Query.*
-import br.com.mobilemind.micro.routing.RegexType.*
-import br.com.mobilemind.micro.routing.RouteQuery.*
-import br.com.mobilemind.micro.routing.router.*
+import Query.*
+import RegexType.*
+import RouteQuery.*
 
 import scala.annotation.tailrec
 import scala.collection.mutable

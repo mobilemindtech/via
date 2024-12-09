@@ -1,4 +1,4 @@
-package br.com.mobilemind.micro.routing.router
+package io.micro.router
 
 trait Controller[Req, Resp]:
 
