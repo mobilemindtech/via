@@ -180,6 +180,13 @@ object Router:
   ): RouteEntry[Req, Resp] =
     RouteEntryController(methods, Route.route(path), controller = c)
 
+  def route[Req, Resp](
+      method: Method,
+      path: String,
+      c: Controller[Req, Resp]
+  ): RouteEntry[Req, Resp] =
+    RouteEntryController(method :: Nil, Route.route(path), controller = c)
+
   def route[Req, Resp](path: Path)(
       c: Handler[Req, Resp]
   ): RouteEntry[Req, Resp] =
@@ -195,6 +202,11 @@ object Router:
   ): RouteEntry[Req, Resp] =
     RouteEntryHandler(methods, Route.route(path), handler = f)
 
+  def route[Req, Resp](method: Method, path: String)(
+      f: Handler[Req, Resp]
+  ): RouteEntry[Req, Resp] =
+    RouteEntryHandler(method :: Nil, Route.route(path), handler = f)
+
   def route[Req, Resp](path: Path)(
       f: Dispatcher[Req, Resp]
   ): RouteEntry[Req, Resp] =
@@ -209,6 +221,11 @@ object Router:
       f: Dispatcher[Req, Resp]
   ): RouteEntry[Req, Resp] =
     RouteEntryDispatcher(methods, Route.route(path), dispatcher = f)
+
+  def route[Req, Resp](method: Method, path: String)(
+      f: Dispatcher[Req, Resp]
+  ): RouteEntry[Req, Resp] =
+    RouteEntryDispatcher(method :: Nil, Route.route(path), dispatcher = f)
 
   def route[Req, Resp](
       methods: Seq[Method],

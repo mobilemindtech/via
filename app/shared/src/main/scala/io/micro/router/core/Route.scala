@@ -1,6 +1,7 @@
 package io.micro.router.core
 
 import io.micro.router.core.Method
+import io.micro.router.core.Path.{/, int, param, regex, root, tail}
 
 import scala.collection.mutable
 
@@ -49,3 +50,37 @@ object Route:
 
   def route(path: Path): Route =
     Route(path).compile
+
+  /** Analyze route path
+    * @param path
+    *   E.g. / /user/:id -> any value (string param) /user/:id([0-9]) -> int
+    *   value (int param) /user/:id(int) -> int value (int param) /user/\* ->
+    *   tail paths (seq param) /user/:id([0-9]+) -> regrex value (string param)
+    *
+    * @return
+    */
+  def route(path: String): Route =
+    if path == "/"
+    then route(root)
+    else
+      val parts =
+        path.split("/").foldLeft(root) { (acc: Path, part: String) =>
+          if part.isEmpty
+          then acc
+          else
+            val re = "^:(\\w+)(\\(.*\\))?".r
+            re.findFirstMatchIn(part) match
+              case Some(matcher) =>
+                val varName = matcher.group(1)
+                matcher.group(2) match
+                  case null                             => acc / param(varName)
+                  case "([0-9])" | "([0-9]+)" | "(int)" => acc / int(varName)
+                  case value => acc / regex(varName, value)
+              case _ =>
+                part.charAt(0) match
+                  case '*' =>
+                    acc / tail("paths")
+                  case _ =>
+                    acc / part
+        }
+      route(parts)

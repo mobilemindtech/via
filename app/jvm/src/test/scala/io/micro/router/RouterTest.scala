@@ -227,3 +227,66 @@ class RouterTest extends AnyFunSuite:
       case None => fail("resp can't be none")
 
   }
+
+  test("router GET  with string route path") {
+
+    val index = route[Request, ResponseBase](Method.Get, "/") {
+      (req: Request) =>
+        Response(200, "index")
+    }
+
+    val users = route[Request, ResponseBase](Method.Get, "/user") {
+      (req: Request) =>
+        Response(200, "users")
+    }
+
+    val userGet = route[Request, ResponseBase](Method.Get, "/user/:id(int)") {
+      (req: Request) =>
+        Response(200, s"user/${req.params.int("id").get}")
+    }
+
+    val peopleName = route[Request, ResponseBase](Method.Get, "/people/:name") {
+      (req: Request) =>
+        Response(200, s"people/${req.params.str("name").get}")
+    }
+
+    val router = Router[Request, ResponseBase, RequestExtra](
+      index,
+      users,
+      userGet,
+      peopleName
+    )
+
+    router.dispatch(Method.Get, "/") match
+      case Some(resp: ResponseText) =>
+        assert(
+          resp.body.contains("index"),
+          "expected response index"
+        )
+      case _ => fail("resp can't be none")
+
+    router.dispatch(Method.Get, "/user") match
+      case Some(resp: ResponseText) =>
+        assert(
+          resp.body.contains("users"),
+          "expected response users"
+        )
+      case _ => fail("resp can't be none")
+
+    router.dispatch(Method.Get, "/user/55") match
+      case Some(resp: ResponseText) =>
+        assert(
+          resp.body.contains("user/55"),
+          "expected response user/55"
+        )
+      case _ => fail("resp can't be none")
+
+    router.dispatch(Method.Get, "/people/ricardo") match
+      case Some(resp: ResponseText) =>
+        assert(
+          resp.body.contains("people/ricardo"),
+          "expected response people/ricardo"
+        )
+      case _ => fail("resp can't be none")
+
+  }
