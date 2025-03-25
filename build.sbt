@@ -1,5 +1,5 @@
 val sharedSettings = Seq(
-  scalaVersion := "3.6.2-RC3",
+  scalaVersion := "3.6.4",
   name := "micro-router",
   organization := "io.micro.router",
   version := "0.0.1"
@@ -12,7 +12,10 @@ scalacOptions ++= Seq(
   "-Wunused:all",
   "-Werror",
   "-deprecation",
-  "-explain"
+  "-explain",
+  "-experimental",
+  "-language:experimental.namedTuples",
+  "-language:experimental.betterFors"
 )
 
 javacOptions ++= Seq("-source", "23", "-target", "23")

@@ -114,7 +114,7 @@ class RouterTest extends AnyFunSuite:
       Response(200, s"hello ${req.auth.get.username}", "text/plain")
     }
 
-    val auth = before { (req: Request) =>
+    val auth = enter { (req: Request) =>
       req.headers.get("Authorization") match
         case Some(token) =>
           users.get(token) match
@@ -153,7 +153,7 @@ class RouterTest extends AnyFunSuite:
       Response(200, s"${req.body.get} ${req.auth.get.username}", "text/plain")
     }
 
-    val auth = before { (req: Request) =>
+    val auth = enter { (req: Request) =>
       req.headers.get("Authorization") match
         case Some(token) =>
           users.get(token) match
@@ -164,7 +164,7 @@ class RouterTest extends AnyFunSuite:
         case _ => Response.unauthorized
     }
 
-    val validation = before { (req: Request) =>
+    val validation = enter { (req: Request) =>
       req.body match
         case None => Response.badRequest
         case _    => req
@@ -201,7 +201,7 @@ class RouterTest extends AnyFunSuite:
         Response(200, Map("name" -> "ricardo"))
     }
 
-    val json = after { (_: Request, resp: ResponseBase) =>
+    val json = leave { (_: Request, resp: ResponseBase) =>
       resp match
         case r: Response[Map[String, String]] =>
           val fields = r.body.map(_.map((k, v) => s"\"$k\": \"$v\""))

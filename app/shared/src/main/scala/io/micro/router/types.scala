@@ -14,7 +14,7 @@ object types:
     ParamPaths
   }
   export io.micro.router.core.Path.*
-  export io.micro.router.Router.{after, before, route, verbs}
+  export io.micro.router.Router.{leave, enter, route, verbs}
   export io.micro.router.{RequestBuilder, RouteEntry, RouteInfo, Router}
   export io.micro.router.core.Method
   export io.micro.router.core.RouteChain.{RouteFound, RouteNotFound}

@@ -2,29 +2,29 @@ package io.micro.router
 
 import io.micro.router.core.Method
 
-type MiddlewareBefore[Req, Resp] = Req => Req | Resp
-type MiddlewareAfter[Req, Resp] = (Req, Resp) => Resp
+type MiddlewareEnter[Req, Resp] = Req => Req | Resp
+type MiddlewareLeave[Req, Resp] = (Req, Resp) => Resp
 
 sealed trait Middleware[+Req, +Resp]:
   val methods: Seq[Method]
 
 // depois
-case class After[Req, Resp](
+case class Leave[Req, Resp](
     override val methods: Seq[Method],
-    handler: MiddlewareAfter[Req, Resp],
-    next: Option[After[Req, Resp]] = None
+    handler: MiddlewareLeave[Req, Resp],
+    next: Option[Leave[Req, Resp]] = None
 ) extends Middleware[Req, Resp]:
-  def ++(m: After[Req, Resp]): After[Req, Resp] =
+  def ++(m: Leave[Req, Resp]): Leave[Req, Resp] =
     copy(next = Some(m))
 
 // antes
-case class Before[Req, Resp](
+case class Enter[Req, Resp](
     override val methods: Seq[Method],
-    handler: MiddlewareBefore[Req, Resp],
-    next: Option[Before[Req, Resp]] = None
+    handler: MiddlewareEnter[Req, Resp],
+    next: Option[Enter[Req, Resp]] = None
 ) extends Middleware[Req, Resp]:
-  def ++(m: Before[Req, Resp]): Before[Req, Resp] =
+  def ++(m: Enter[Req, Resp]): Enter[Req, Resp] =
     copy(next = Some(m))
 
   def ++(route: RouteEntry[Req, Resp]): RouteEntry[Req, Resp] =
-    route.copyWithBefore(this)
+    route.copyWithEnter(this)

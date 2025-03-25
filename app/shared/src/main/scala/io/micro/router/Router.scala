@@ -79,7 +79,7 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
       entry match
         case r: RouteEntryHandler[Req, Resp] =>
           val resp =
-            middlewareBefore(method, req, r.before) match
+            applyEnter(method, req, r.enter) match
               case newReq: Req =>
                 r.handler.handle(newReq)
               case resp: Resp => resp
@@ -88,7 +88,7 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
 
         case r: RouteEntryDispatcher[Req, Resp] =>
           val resp =
-            middlewareBefore(method, req, r.before) match
+            applyEnter(method, req, r.enter) match
               case ttReq(newReq) =>
                 r.dispatcher(newReq)
               case ttResp(resp) => resp
@@ -96,7 +96,7 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
           resp |> Some.apply
 
         case r: RouteEntryController[Req, Resp] =>
-          middlewareBefore(method, req, r.before) match
+          applyEnter(method, req, r.enter) match
             case ttResp(resp) => resp |> Some.apply
             case ttReq(newReq) =>
               val crlResult =
@@ -119,41 +119,40 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
 
     resp match
       case Some(rsp) =>
-        middlewareAfter(method, req, rsp, entry.after) |> Some.apply
+        applyLeave(method, req, rsp, entry.leave) |> Some.apply
       case None => None
 
-  @tailrec
-  private def middlewareBefore(
+  def applyEnter(
       method: Method,
       req: Req,
-      beforeOpt: Option[Before[Req, Resp]]
+      enterOpt: Option[Enter[Req, Resp]]
   ): Resp | Req =
-    beforeOpt match
-      case Some(before) =>
-        if before.methods.exists(m => m == Method.Any || m == method)
+    enterOpt match
+      case Some(enter) =>
+        if enter.methods.exists(m => m == Method.Any || m == method)
         then
-          before.handler(req) match
+          enter.handler(req) match
             case ttReq(newReq) =>
-              middlewareBefore(method, newReq, before.next)
+              applyEnter(method, newReq, enter.next)
             case ttResp(resp) =>
               resp
-        else middlewareBefore(method, req, before.next)
+        else applyEnter(method, req, enter.next)
       case _ => req
 
-  @tailrec
-  private def middlewareAfter(
+
+  def applyLeave(
       method: Method,
       req: Req,
       resp: Resp,
-      afterOpt: Option[After[Req, Resp]]
+      leaveOpt: Option[Leave[Req, Resp]]
   ): Resp =
-    afterOpt match
-      case Some(after) =>
+    leaveOpt match
+      case Some(leave) =>
         val newResp =
-          if after.methods.exists(m => m == Method.Any || m == method)
-          then after.handler(req, resp)
+          if leave.methods.exists(m => m == Method.Any || m == method)
+          then leave.handler(req, resp)
           else resp
-        middlewareAfter(method, req, newResp, after.next)
+        applyLeave(method, req, newResp, leave.next)
       case _ => resp
 
 object Router:
@@ -246,20 +245,20 @@ object Router:
   ): RouteEntry[Req, Resp] =
     RouteEntryDispatcher(methods, r, dispatcher = f)
 
-  def after[Req, Resp](methods: Method*)(
-      dispatch: MiddlewareAfter[Req, Resp]
-  ): After[Req, Resp] =
-    After(methods, dispatch)
+  def leave[Req, Resp](methods: Method*)(
+      dispatch: MiddlewareLeave[Req, Resp]
+  ): Leave[Req, Resp] =
+    Leave(methods, dispatch)
 
-  def after[Req, Resp](dispatch: MiddlewareAfter[Req, Resp]): After[Req, Resp] =
-    After(Method.Any :: Nil, dispatch)
+  def leave[Req, Resp](dispatch: MiddlewareLeave[Req, Resp]): Leave[Req, Resp] =
+    Leave(Method.Any :: Nil, dispatch)
 
-  def before[Req, Resp](methods: Method*)(
-      dispatch: MiddlewareBefore[Req, Resp]
-  ): Before[Req, Resp] =
-    Before(methods, dispatch)
+  def enter[Req, Resp](methods: Method*)(
+      dispatch: MiddlewareEnter[Req, Resp]
+  ): Enter[Req, Resp] =
+    Enter(methods, dispatch)
 
-  def before[Req, Resp](
-      dispatch: MiddlewareBefore[Req, Resp]
-  ): Before[Req, Resp] =
-    Before(Method.Any :: Nil, dispatch)
+  def enter[Req, Resp](
+      dispatch: MiddlewareEnter[Req, Resp]
+  ): Enter[Req, Resp] =
+    Enter(Method.Any :: Nil, dispatch)
