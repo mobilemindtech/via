@@ -6,6 +6,8 @@ Minimalistic scala routing
 
 ```scala
 
+import io.micro.router.*
+
 // /test/?ids=123
 route(root / "test" /? q_list_int("ids")) { req => ??? }
 
