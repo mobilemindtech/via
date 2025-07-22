@@ -1,12 +1,9 @@
-# micro-routing
-Minimalistic scala routing
-
-
-
+# via
+Minimalistic http routing dispatcher for Scala
 
 ```scala
 
-import io.micro.router.*
+import via.*
 
 // /test/?ids=123
 route(root / "test" /? q_list_int("ids")) { req => ??? }
@@ -38,7 +35,7 @@ route(Get, "/user/:id(int)") { req => ??? }
 // /user/a/b => req.params.tail("paths") == List("a", "b")
 route(Get, "/user/*") { req => ??? }
 
-// process target 
+// chain target 
 RouteChain.chain(uri, Seq(routeA, routeB)) match
   case Ok(route, matcher, params, query, issues) =>
     // found

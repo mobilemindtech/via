@@ -1,33 +1,30 @@
 val sharedSettings = Seq(
-  scalaVersion := "3.6.4",
+  scalaVersion := "3.7.1",
   scalacOptions ++= Seq(
     "-new-syntax",
-    //"-no-indent",
+    // "-no-indent",
     "-Wvalue-discard",
     "-Wunused:all",
-    //"-Werror",
+    // "-Werror",
     "-deprecation",
     "-explain",
     "-explain-cyclic",
     "-rewrite",
-    "-source:future",
-    "-language:experimental.modularity",
-    "-language:experimental.betterFors",
-    "-language:experimental.namedTuples",
+    "-source:future"
   ),
-  javacOptions ++= Seq("-source", "23", "-target", "23")
+  javacOptions ++= Seq("-source", "24", "-target", "24")
 )
 
-lazy val router =
+lazy val via =
   // select supported platforms
   crossProject(JSPlatform, JVMPlatform, NativePlatform)
     .crossType(CrossType.Full) // [Pure, Full, Dummy], default: CrossType.Full
     .withoutSuffixFor(JVMPlatform)
-    .in(file("router"))
+    .in(file("via"))
     .settings(sharedSettings *)
     .settings(
-      name := "router",
-      organization := "io.micro",
+      name := "via",
+      organization := "io.via",
       version := "0.0.1"
     )
     .jvmSettings(

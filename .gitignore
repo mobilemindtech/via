@@ -9,3 +9,6 @@ hs_err_pid*
 target
 project/project
 .metals
+.bloop
+.vscode
+project/metals.sbt
