@@ -1,6 +1,16 @@
 # via
 Minimalistic http routing dispatcher for Scala
 
+## Features
+
+* Enter and leave middleware
+* Route params
+* Route query
+
+## Routes examples
+
+Complete code at [https://github.com/mobilemindtech/via/blob/master/via/jvm/src/test/scala/io/via/RoutingTest.scala]
+
 ```scala
 
 import via.*
@@ -35,10 +45,54 @@ route(Get, "/user/:id(int)") { req => ??? }
 // /user/a/b => req.params.tail("paths") == List("a", "b")
 route(Get, "/user/*") { req => ??? }
 
-// chain target 
+// apply route chain
 RouteChain.chain(uri, Seq(routeA, routeB)) match
   case Ok(route, matcher, params, query, issues) =>
     // found
   case NotFound()
+
+```
+
+## Middleware example
+
+Complete code at [https://github.com/mobilemindtech/via/blob/master/via/jvm/src/test/scala/io/via/RouterTest.scala]
+
+```scala
+import via.*
+
+val index = route(GET, root) { (req: Request) =>
+    Response(200, s"${req.body.get} ${req.auth.get.username}", "text/plain")
+}
+
+val auth = enter { (req: Request) =>
+    req.headers.get("Authorization") match
+        case Some(token) =>
+            users.get(token) match
+                case Some(username) =>
+                    val auth = Auth(username, token) |> Some.apply
+                    req.copy(auth = auth)
+                case _ => Response.unauthorized
+        case _ => Response.unauthorized
+}
+
+val validation = enter { (req: Request) =>
+    req.body match
+        case None => Response.badRequest
+        case _    => req
+}
+
+val authIndex = auth ++ validation ++ index
+
+val router = Router[Request, ResponseText, RequestExtra](authIndex)
+
+router.dispatch(GET, "/") match
+    case Some(resp) =>
+        assert(resp.body.contains("hello jonh@gmail.com"), "expected response hello jonh@gmail.com")
+    case None => fail("resp can't be none")
+
+router.dispatch(GET, "/", extra.copy(body = None)) match
+    case Some(resp) =>
+        assert(resp.status == 400,"expected response status 400")
+    case None => fail("resp can't be none")
 
 ```

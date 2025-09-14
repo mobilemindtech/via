@@ -40,8 +40,8 @@ trait RequestBuilder[Req, Extra]:
 
 case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
     requestBuilder: RequestBuilder[Req, Extra],
-    ttReq: TypeTest[Any, Req],
-    ttResp: TypeTest[Any, Resp]
+    ttReq: TypeTest[Matchable, Req],
+    ttResp: TypeTest[Matchable, Resp]
 ):
 
   /** Dispatch route

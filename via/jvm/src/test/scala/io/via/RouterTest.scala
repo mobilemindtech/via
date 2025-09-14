@@ -71,7 +71,7 @@ class RouterTest extends AnyFunSuite:
         body = extra.flatMap(_.body),
         headers = extra.map(_.headers).getOrElse(Map())
       )
-  
+
   val users = Map(
     "123456" -> "jonh@gmail.com"
   )
