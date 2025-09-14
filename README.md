@@ -9,7 +9,7 @@ Minimalistic http routing dispatcher for Scala
 
 ## Routes examples
 
-Complete code at [https://github.com/mobilemindtech/via/blob/master/via/jvm/src/test/scala/io/via/RoutingTest.scala]
+Complete code at https://github.com/mobilemindtech/via/blob/master/via/jvm/src/test/scala/io/via/RoutingTest.scala
 
 ```scala
 
@@ -55,7 +55,7 @@ RouteChain.chain(uri, Seq(routeA, routeB)) match
 
 ## Middleware example
 
-Complete code at [https://github.com/mobilemindtech/via/blob/master/via/jvm/src/test/scala/io/via/RouterTest.scala]
+Complete code at https://github.com/mobilemindtech/via/blob/master/via/jvm/src/test/scala/io/via/RouterTest.scala
 
 ```scala
 import via.*
