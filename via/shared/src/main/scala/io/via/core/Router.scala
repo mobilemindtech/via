@@ -24,32 +24,74 @@ import io.via.types.{
   RouteInfo
 }
 
+import scala.annotation.tailrec
+
+/** Rule to create a new Request, base on route info and route extra
+  * information. Route extra is the necessary low-level information to create a
+  * new Request. This should be provided by server implementation.
+  * @tparam Req
+  *   Request type
+  * @tparam Extra
+  *   Route extra type
+  */
 trait RequestBuilder[Req, Extra]:
 
-  def build(routeInfo: RouteInfo, extra: Option[Extra]): Req
+  def build(routeInfo: RouteInfo, routeExtra: Option[Extra]): Req
 
 case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
-    builder: RequestBuilder[Req, Extra],
+    requestBuilder: RequestBuilder[Req, Extra],
     ttReq: TypeTest[Any, Req],
     ttResp: TypeTest[Any, Resp]
 ):
 
+  /** Dispatch route
+    * @param target
+    *   Target URL
+    * @param extra
+    *   Route extra to create request
+    * @return
+    *   The response
+    */
   def dispatch(target: String, extra: Extra): Option[Resp] =
     dispatch(ANY, target, extra)
 
+  /** Dispatch route
+    * @param method
+    *   Http Method
+    * @param target
+    *   Target URL
+    * @param extra
+    *   Route extra to create request
+    * @return
+    *   The response
+    */
   def dispatch(method: Method, target: String, extra: Extra): Option[Resp] =
-    doDispatch(method, target, Some(extra))
+    doRequest(method, target, Some(extra))
 
+  /** Dispatch route
+    * @param target
+    *   Target URL
+    * @return
+    *   The response
+    */
   def dispatch(target: String): Option[Resp] =
     dispatch(ANY, target)
 
+  /** Dispatch route
+    * @param method
+    *   Http method
+    * @param target
+    *   Target URL
+    * @return
+    *   The response
+    */
   def dispatch(
       method: Method,
       target: String
   ): Option[Resp] =
-    doDispatch(method, target, None)
+    doRequest(method, target, None)
 
-  private def doDispatch(
+  private def doRequest(
       method: Method,
       target: String,
       extra: Option[Extra]
@@ -63,14 +105,14 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
     }
     RouteChain.chain(method, target, rts) match
       case routeFound: RouteFound =>
-        doDispatch(method, target, routeFound, extra)
+        doRequest(method, target, routeFound, extra)
       case RouteNotFound() => None
 
-  private def doDispatch(
+  private def doRequest(
       method: Method,
       target: String,
       routeFound: RouteFound,
-      extra: Option[Extra] = None
+      extra: Option[Extra]
   ): Option[Resp] =
 
     val route = routeFound.route
@@ -83,7 +125,7 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
       routeFound.params,
       routeFound.query
     )
-    val req = builder.build(routeInfo, extra)
+    val req = requestBuilder.build(routeInfo, extra)
     val resp =
       entry match
         case r: RouteEntryHandler[Req, Resp] =>
@@ -122,18 +164,25 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
                   case ANY     => ()
               crlResult match
                 case resp: Resp => resp |> Some.apply
-                case _: Unit    => // not found
+                case _          => // not found
                   // try default handler
                   r.controller.handle(newReq) match
-                    case _: Unit    => None // not found
                     case resp: Resp => resp |> Some.apply
+                    case _          => None // not found
 
     resp match
       case Some(rsp) =>
         applyLeave(method, req, rsp, entry.leave) |> Some.apply
       case None => None
 
-  def applyEnter(
+  /** Apply enter middleware
+    * @param method
+    * @param req
+    * @param enterOpt
+    * @return
+    */
+  @tailrec
+  private def applyEnter(
       method: Method,
       req: Req,
       enterOpt: Option[Enter[Req, Resp]]
@@ -150,7 +199,15 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
         else applyEnter(method, req, enter.next)
       case _ => req
 
-  def applyLeave(
+  /** Apply leave middleware
+    * @param method
+    * @param req
+    * @param resp
+    * @param leaveOpt
+    * @return
+    */
+  @tailrec
+  private def applyLeave(
       method: Method,
       req: Req,
       resp: Resp,

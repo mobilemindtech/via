@@ -58,7 +58,7 @@ object RouteChain:
     chain(Method.ANY, target, routes)
 
   def chain(method: Method, target: String, routes: Seq[Route]): RouteResult =
-    doChain(method, target, routes) match
+    mkRouteChain(method, target, routes) match
       case Some(info) =>
         val issues =
           info.query.raw
@@ -77,7 +77,7 @@ object RouteChain:
 
       case None => RouteNotFound()
 
-  private def doChain(
+  private def mkRouteChain(
       method: Method,
       target: String,
       routes: Seq[Route]
@@ -192,7 +192,7 @@ object RouteChain:
             (getQueryName(typ), toQueryList(targetQuery, typ)) match
               case (name, QueryList(Nil)) => QueryParam(name, QueryInvalid())
               case (name, ql)             => QueryParam(name, ql)
-          case typ => throw RouteException(s"invalid route query type: ${typ}")
+          case typ => throw RouteException(s"invalid route query type: $typ")
         }
 
   private def toQueryIntOpt(v: String): Option[QueryInt] =
@@ -299,13 +299,13 @@ object RouteChain:
           .foldRight(Map[String, String]()) { (value, acc) =>
             value.split("=").toList match
               case k :: v :: Nil =>
-                acc + ((k, v))
+                acc + (k -> v)
               case _ => acc
           }
       case None => Map()
 
   private def mkQuery(queries: List[QueryParam]): Query =
-    def extract(v: QueryType): Any = v match
+    def extract(v: QueryType): Matchable = v match
       case QueryInt(v)  => v
       case QueryLong(v) => v
       case QueryStr(v)  => v
@@ -323,12 +323,12 @@ object RouteChain:
         case QueryParam(name, value) =>
           extract(value).asInstanceOf[QueryMatcherType]
 
-    val tuple =
+    val tuple: Seq[(String, Matchable)] =
       queries.map:
         case QueryParam(name, value) =>
           (name, extract(value))
 
-    Query(queries, matcher, tuple.toSeq)
+    Query(queries, matcher, tuple)
 
   private def mkRouteMatcher(route: Route, params: Seq[Param]): RouteMatcher =
     val matcher: RouteMatcher =
@@ -341,13 +341,13 @@ object RouteChain:
             case Some(ParamPaths(_, tail)) => tail.head
             case _ =>
               throw RouteException(
-                s"param ${p.name} not found on route match creator"
+                s"param ${p.name} not found to route match creator"
               )
         case p: PathRoot => p
         case p: PathEnd  => p
         case PathPart(v) => v
         case p =>
-          throw RouteException(s"wrong path part ${p} on route match creator")
+          throw RouteException(s"wrong path part $p to route match creator")
     route.path.parts.lastOption match
       case Some(ParamPaths(_, tail)) => matcher ::: tail.tail
       case _                         => matcher

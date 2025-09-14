@@ -3,11 +3,12 @@ package io.via
 import via.*
 import io.via.core.RouteChain
 import io.via.types.{Param, ParamInt, ParamPaths, ParamStr, Query, Route}
+import org.scalatest.compatible.Assertion
 import org.scalatest.funsuite.AnyFunSuite
 
-class RoutingSpec extends AnyFunSuite:
+class RoutingTest extends AnyFunSuite:
 
-  def testPathParams(uri: String, routes: Seq[Route], expects: Param*) =
+  def testPathParams(uri: String, routes: Seq[Route], expects: Param*): Unit =
     RouteChain.chain(uri, routes) match
 
       case RouteFound(_, _, params, _, _) =>
@@ -21,13 +22,17 @@ class RoutingSpec extends AnyFunSuite:
           val expected = expects(i)
           assert(
             found == expected,
-            s"wong param ${expected.name} expected ${expected}  != found ${found}"
+            s"wong param ${expected.name} expected ${expected}  != found $found"
           )
 
       case RouteNotFound() =>
         fail(s"route $uri not found")
 
-  def testQuery(uri: String, routes: Seq[Route], expects: (String, Any)*) =
+  def testQuery(
+      uri: String,
+      routes: Seq[Route],
+      expects: (String, Any)*
+  ): Unit =
     RouteChain.chain(uri, routes) match
       case RouteFound(route, _, _, query, _) =>
         assert(
@@ -41,16 +46,17 @@ class RoutingSpec extends AnyFunSuite:
               val expected = tp._2
               assert(
                 found._2 == expected,
-                s"wong param ${found._1} expected ${expected} != found ${found}"
+                s"wong param ${found._1} expected ${expected} != found $found"
               )
             case None => fail(s"query ${tp._1} not found")
 
       case RouteNotFound() =>
         fail(s"route $uri not found")
 
-  def testNotFound(uri: String, routes: Route*) =
+  def testNotFound(uri: String, routes: Route*): Unit =
     val r = RouteChain.chain(uri, routes)
-    assert(r == RouteNotFound(), s"expected not found route to uri ${uri}")
+    val _ =
+      assert(r == RouteNotFound(), s"expected not found route to uri $uri")
 
   test("route compile") {
     val home = root |> route
@@ -210,32 +216,32 @@ class RoutingSpec extends AnyFunSuite:
 
     val test1 = root / "test" /? q_list_int_opt("ids") |> route
     chain("/test/", test1) { q =>
-      assert(q.listInt("ids") == Nil, "ids should be Nil")
+      val _ = assert(q.listInt("ids") == Nil, "ids should be Nil")
     }
 
     val test2 = root / "test" /? q_list_int_opt("ids") |> route
     chain("/test/?ids=1,2,3", test2) { q =>
-      assert(q.listInt("ids") == List(1, 2, 3), "ids should be 1,2,3")
+      val _ = assert(q.listInt("ids") == List(1, 2, 3), "ids should be 1,2,3")
     }
 
     val test3 = root / "test" /? q_list_int("ids") |> route
     chain("/test/?ids=1,2,3", test3) { q =>
-      assert(q.listInt("ids") == List(1, 2, 3), "ids should be 1,2,3")
+      val _ = assert(q.listInt("ids") == List(1, 2, 3), "ids should be 1,2,3")
     }
 
     val test4 = root / "test" /? q_bool("test") |> route
     chain("/test/?test=true", test4) { q =>
-      assert(q.bool("test").contains(true), "ids should be true")
+      val _ = assert(q.bool("test").contains(true), "ids should be true")
     }
 
     val test5 = root / "test" /? q_str("name") |> route
     chain("/test/?name=ricardo", test5) { q =>
-      assert(q.str("name").contains("ricardo"), "name should be true")
+      val _ = assert(q.str("name").contains("ricardo"), "name should be true")
     }
 
     val test6 = root / "test" /? q_str_opt("name") |> route
     chain("/test/?name=ricardo", test6) { q =>
-      assert(q.str("name").contains("ricardo"), "name should be true")
+      val _ = assert(q.str("name").contains("ricardo"), "name should be true")
     }
 
   }

@@ -1,5 +1,4 @@
 val sharedSettings = Seq(
-  scalaVersion := "3.7.1",
   scalacOptions ++= Seq(
     "-new-syntax",
     // "-no-indent",
@@ -15,6 +14,11 @@ val sharedSettings = Seq(
   javacOptions ++= Seq("-source", "24", "-target", "24")
 )
 
+ThisBuild / name := "via"
+ThisBuild / organization := "io.via"
+ThisBuild / version := "0.0.1"
+ThisBuild / scalaVersion := "3.7.3"
+
 lazy val via =
   // select supported platforms
   crossProject(JSPlatform, JVMPlatform, NativePlatform)
@@ -22,11 +26,6 @@ lazy val via =
     .withoutSuffixFor(JVMPlatform)
     .in(file("via"))
     .settings(sharedSettings *)
-    .settings(
-      name := "via",
-      organization := "io.via",
-      version := "0.0.1"
-    )
     .jvmSettings(
       libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test"
     )

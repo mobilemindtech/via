@@ -32,7 +32,7 @@ case class Route(
               case PathParamRegex(_, pattern, _) => s"/($pattern)" // (group)
         .filterNot(_.isEmpty)
 
-    val ptrn =
+    val pattern =
       routeParts match
         case Nil => "^/$"
         case _ =>
@@ -42,7 +42,7 @@ case class Route(
           else s"^$str$$"
 
     val pars = params.toList
-    copy(pattern = ptrn, params = pars, pure = pars.isEmpty)
+    copy(pattern = pattern, params = pars, pure = pars.isEmpty)
 /*
 object Route:
 

@@ -53,24 +53,25 @@ object Response:
   def apply[T](status: Int, body: T, contentType: String): Response[T] =
     Response(status, Some(body), Some(contentType))
 
-given RequestBuilder[Request, RequestExtra] with
-  override def build(
-      routeInfo: RouteInfo,
-      extra: Option[RequestExtra]
-  ): Request =
-    Request(
-      routeInfo.method,
-      routeInfo.target,
-      routeInfo.params,
-      routeInfo.query,
-      routeInfo.matcher,
-      body = extra.flatMap(_.body),
-      headers = extra.map(_.headers).getOrElse(Map())
-    )
 
 // sbt testOnly *RouterTest
 class RouterTest extends AnyFunSuite:
 
+  given RequestBuilder[Request, RequestExtra]:
+    override def build(
+                        routeInfo: RouteInfo,
+                        extra: Option[RequestExtra]
+                      ): Request =
+      Request(
+        routeInfo.method,
+        routeInfo.target,
+        routeInfo.params,
+        routeInfo.query,
+        routeInfo.matcher,
+        body = extra.flatMap(_.body),
+        headers = extra.map(_.headers).getOrElse(Map())
+      )
+  
   val users = Map(
     "123456" -> "jonh@gmail.com"
   )

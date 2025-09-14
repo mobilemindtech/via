@@ -90,10 +90,12 @@ object RouteQuery:
     RouteQueryList(RouteQueryLong(name))
   )
 
+type TTAny[T] = TypeTest[Any, T]
+
 case class Query(
     raw: List[QueryParam] = Nil,
     matcher: QueryMatcher = Nil,
-    tuple: Seq[(String, Any)] = Nil
+    tuple: Seq[(String, Matchable)] = Nil
 ):
 
   def size: Int = raw.size
@@ -103,42 +105,42 @@ case class Query(
   def nonEmpty: Boolean = !empty
 
   def listStr(name: String)(using
-      t: TypeTest[Any, List[String]]
+      t: TTAny[List[String]]
   ): List[String] =
     tuple.find(_._1 == name) match
-      case Some((_, l @ t(v)))       => l
-      case Some((_, Some(l @ t(v)))) => l
+      case Some((_, l @ t(_)))       => l
+      case Some((_, Some(l @ t(_)))) => l
       case _                         => Nil
 
-  def listInt(name: String)(using t: TypeTest[Any, List[Int]]): List[Int] =
+  def listInt(name: String)(using t: TTAny[List[Int]]): List[Int] =
     tuple.find(_._1 == name) match
-      case Some((_, l @ t(v)))       => l
-      case Some((_, Some(l @ t(v)))) => l
+      case Some((_, l @ t(_)))       => l
+      case Some((_, Some(l @ t(_)))) => l
       case _                         => Nil
 
-  def listLong(name: String)(using t: TypeTest[Any, List[Long]]): List[Long] =
+  def listLong(name: String)(using t: TTAny[List[Long]]): List[Long] =
     tuple.find(_._1 == name) match
-      case Some((_, l @ t(v)))       => l
-      case Some((_, Some(l @ t(v)))) => l
+      case Some((_, l @ t(_)))       => l
+      case Some((_, Some(l @ t(_)))) => l
       case _                         => Nil
 
-  def str(name: String): Option[String] =
+  def str(name: String)(using t: TTAny[String]): Option[String] =
     tuple.find(_._1 == name) match
-      case Some((_, s: String))       => Some(s)
-      case Some((_, Some(s: String))) => Some(s)
-      case _                          => None
+      case Some((_, s @ t(_)))       => Some(s)
+      case Some((_, Some(s @ t(_)))) => Some(s)
+      case _                         => None
 
-  def int(name: String): Option[Int] =
+  def int(name: String)(using t: TTAny[Int]): Option[Int] =
     tuple.find(_._1 == name) match
-      case Some((_, s: Int))       => Some(s)
-      case Some((_, Some(s: Int))) => Some(s)
-      case _                       => None
+      case Some((_, s @ t(_)))       => Some(s)
+      case Some((_, Some(s @ t(_)))) => Some(s)
+      case _                         => None
 
-  def long(name: String): Option[Long] =
+  def long(name: String)(using t: TTAny[Long]): Option[Long] =
     tuple.find(_._1 == name) match
-      case Some((_, s: Long))       => Some(s)
-      case Some((_, Some(s: Long))) => Some(s)
-      case _                        => None
+      case Some((_, s @ t(_)))       => Some(s)
+      case Some((_, Some(s @ t(_)))) => Some(s)
+      case _                         => None
 
   def bool(name: String): Option[Boolean] =
     tuple.find(_._1 == name) match
@@ -155,17 +157,19 @@ object Query:
     case QueryOption(v: QueryOptType) extends QueryType
     case QueryInvalid() extends QueryType
 
-  type QueryListType =
+  private type QueryListType =
     List[QueryStr | QueryInt | QueryLong | QueryInvalid]
 
-  type QueryOptType =
+  private type QueryOptType =
     Option[QueryStr | QueryInt | QueryLong | QueryBool | QueryList]
 
   case class QueryParam(name: String, value: QueryType)
 
-  type QueryMatcherListType = List[Int | Long | String]
-  type QueryMatcherOptType =
+  private type QueryMatcherListType = List[Int | Long | String]
+
+  private type QueryMatcherOptType =
     Option[Int | Long | String | Boolean | QueryMatcherListType]
+
   type QueryMatcherType =
     Int | Long | String | Boolean | QueryMatcherOptType | QueryMatcherListType
 
