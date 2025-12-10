@@ -1,6 +1,12 @@
 # via
 Minimalistic http routing dispatcher for Scala
 
+## Publish local
+
+```
+$ sbt +publishLocal
+```
+
 ## Features
 
 * Enter and leave middleware

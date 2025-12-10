@@ -11,19 +11,19 @@ val sharedSettings = Seq(
     "-rewrite",
     "-source:future"
   ),
-  javacOptions ++= Seq("-source", "24", "-target", "24")
+  javacOptions ++= Seq("-source", "25", "-target", "25")
 )
 
 ThisBuild / name := "via"
 ThisBuild / organization := "io.via"
 ThisBuild / version := "0.0.1"
-ThisBuild / scalaVersion := "3.7.3"
+ThisBuild / scalaVersion := "3.8.0-RC3"
 
 lazy val via =
   // select supported platforms
   crossProject(JSPlatform, JVMPlatform, NativePlatform)
     .crossType(CrossType.Full) // [Pure, Full, Dummy], default: CrossType.Full
-    .withoutSuffixFor(JVMPlatform)
+    // .withoutSuffixFor(JVMPlatform)
     .in(file("via"))
     .settings(sharedSettings *)
     .jvmSettings(
