@@ -21,7 +21,7 @@ case class Request(
     auth: Option[Auth] = None
 )
 
-case class RequestExtra(body: Option[String] = None, headers: Headers = Map())
+case class NativeRequest(body: Option[String] = None, headers: Headers = Map())
 
 trait ResponseBase
 
@@ -57,10 +57,10 @@ object Response:
 // sbt testOnly *RouterTest
 class RouterTest extends AnyFunSuite:
 
-  given RequestBuilder[Request, RequestExtra]:
+  given RequestBuilder[Request, NativeRequest]:
     override def build(
                         routeInfo: RouteInfo,
-                        extra: Option[RequestExtra]
+                        nativeRequest: Option[NativeRequest]
                       ): Request =
       Request(
         routeInfo.method,
@@ -68,8 +68,8 @@ class RouterTest extends AnyFunSuite:
         routeInfo.params,
         routeInfo.query,
         routeInfo.matcher,
-        body = extra.flatMap(_.body),
-        headers = extra.map(_.headers).getOrElse(Map())
+        body = nativeRequest.flatMap(_.body),
+        headers = nativeRequest.map(_.headers).getOrElse(Map())
       )
 
   val users = Map(
@@ -82,7 +82,7 @@ class RouterTest extends AnyFunSuite:
       Response(200, "OK", "text/plain")
     }
 
-    val router = Router[Request, ResponseText, RequestExtra](entry)
+    val router = Router[Request, ResponseText, NativeRequest](entry)
 
     router.dispatch(GET, "/") match
       case Some(resp) =>
@@ -96,7 +96,7 @@ class RouterTest extends AnyFunSuite:
       Response(200, s"OK ${req.method.verb}", "text/plain")
     }
 
-    val router = Router[Request, ResponseText, RequestExtra](entry)
+    val router = Router[Request, ResponseText, NativeRequest](entry)
 
     router.dispatch(GET, "/") match
       case Some(resp) =>
@@ -128,9 +128,9 @@ class RouterTest extends AnyFunSuite:
 
     val authIndex = auth ++ index
 
-    val router = Router[Request, ResponseText, RequestExtra](authIndex)
-    val extra = RequestExtra(headers = Map("Authorization" -> "123456"))
-    router.dispatch(GET, "/", extra) match
+    val router = Router[Request, ResponseText, NativeRequest](authIndex)
+    val nativeRequest = NativeRequest(headers = Map("Authorization" -> "123456"))
+    router.dispatch(GET, "/", nativeRequest) match
       case Some(resp) =>
         assert(
           resp.body.contains("hello jonh@gmail.com"),
@@ -173,12 +173,12 @@ class RouterTest extends AnyFunSuite:
 
     val authIndex = auth ++ validation ++ index
 
-    val router = Router[Request, ResponseText, RequestExtra](authIndex)
-    val extra = RequestExtra(
+    val router = Router[Request, ResponseText, NativeRequest](authIndex)
+    val nativeRequest = NativeRequest(
       body = Some("hello"),
       headers = Map("Authorization" -> "123456")
     )
-    router.dispatch(GET, "/", extra) match
+    router.dispatch(GET, "/", nativeRequest) match
       case Some(resp) =>
         assert(
           resp.body.contains("hello jonh@gmail.com"),
@@ -186,7 +186,7 @@ class RouterTest extends AnyFunSuite:
         )
       case None => fail("resp can't be none")
 
-    router.dispatch(GET, "/", extra.copy(body = None)) match
+    router.dispatch(GET, "/", nativeRequest.copy(body = None)) match
       case Some(resp) =>
         assert(
           resp.status == 400,
@@ -216,7 +216,7 @@ class RouterTest extends AnyFunSuite:
 
     val authIndex = index ++ json
 
-    val router = Router[Request, ResponseBase, RequestExtra](authIndex)
+    val router = Router[Request, ResponseBase, NativeRequest](authIndex)
 
     router.dispatch(GET, "/") match
       case Some(resp: ResponseText) =>
@@ -252,7 +252,7 @@ class RouterTest extends AnyFunSuite:
       Response(200, s"head/${req.params.tail("paths").mkString(",")}")
     }
 
-    val router = Router[Request, ResponseBase, RequestExtra](
+    val router = Router[Request, ResponseBase, NativeRequest](
       index,
       users,
       userGet,

@@ -66,6 +66,8 @@ Complete code at https://github.com/mobilemindtech/via/blob/master/via/jvm/src/t
 ```scala
 import via.*
 
+case class NativeRequest(body: String = "")
+
 val index = route(GET, root) { (req: Request) =>
     Response(200, s"${req.body.get} ${req.auth.get.username}", "text/plain")
 }
@@ -89,14 +91,16 @@ val validation = enter { (req: Request) =>
 
 val authIndex = auth ++ validation ++ index
 
-val router = Router[Request, ResponseText, RequestExtra](authIndex)
+val router = Router[Request, ResponseText, NativeRequest](authIndex)
 
 router.dispatch(GET, "/") match
     case Some(resp) =>
         assert(resp.body.contains("hello jonh@gmail.com"), "expected response hello jonh@gmail.com")
     case None => fail("resp can't be none")
 
-router.dispatch(GET, "/", extra.copy(body = None)) match
+val nativeRequest: NativeRequest = NativeRequest()
+
+router.dispatch(GET, "/", nativeRequest) match
     case Some(resp) =>
         assert(resp.status == 400,"expected response status 400")
     case None => fail("resp can't be none")

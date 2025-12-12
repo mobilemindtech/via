@@ -27,19 +27,19 @@ import io.via.types.{
 import scala.annotation.tailrec
 
 /** Rule to create a new Request, base on route info and route extra
-  * information. Route extra is the necessary low-level information to create a
+  * information. Route NativeReq is the necessary low-level information to create a
   * new Request. This should be provided by server implementation.
   * @tparam Req
   *   Request type
-  * @tparam Extra
-  *   Route extra type
+  * @tparam NativeReq
+  *   Route raw request type
   */
-trait RequestBuilder[Req, Extra]:
+trait RequestBuilder[Req, NativeReq]:
 
-  def build(routeInfo: RouteInfo, routeExtra: Option[Extra]): Req
+  def build(routeInfo: RouteInfo, req: Option[NativeReq]): Req
 
-case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
-    requestBuilder: RequestBuilder[Req, Extra],
+case class Router[Req, Resp, NativeReq](routes: RouteEntry[Req, Resp]*)(using
+    requestBuilder: RequestBuilder[Req, NativeReq],
     ttReq: TypeTest[Matchable, Req],
     ttResp: TypeTest[Matchable, Resp]
 ):
@@ -47,26 +47,26 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
   /** Dispatch route
     * @param target
     *   Target URL
-    * @param extra
-    *   Route extra to create request
+    * @param nativeReq
+    *   Route native req to create request
     * @return
     *   The response
     */
-  def dispatch(target: String, extra: Extra): Option[Resp] =
-    dispatch(ANY, target, extra)
+  def dispatch(target: String, nativeReq: NativeReq): Option[Resp] =
+    dispatch(ANY, target, nativeReq)
 
   /** Dispatch route
     * @param method
     *   Http Method
     * @param target
     *   Target URL
-    * @param extra
-    *   Route extra to create request
+    * @param nativeReq
+    *   Route native req to create request
     * @return
     *   The response
     */
-  def dispatch(method: Method, target: String, extra: Extra): Option[Resp] =
-    doRequest(method, target, Some(extra))
+  def dispatch(method: Method, target: String, nativeReq: NativeReq): Option[Resp] =
+    doRequest(method, target, Some(nativeReq))
 
   /** Dispatch route
     * @param target
@@ -94,7 +94,7 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
   private def doRequest(
       method: Method,
       target: String,
-      extra: Option[Extra]
+      nativeReq: Option[NativeReq]
   ): Option[Resp] =
 
     val rts = routes.map { entry =>
@@ -105,14 +105,14 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
     }
     RouteChain.chain(method, target, rts) match
       case routeFound: RouteFound =>
-        doRequest(method, target, routeFound, extra)
+        doRequest(method, target, routeFound, nativeReq)
       case RouteNotFound() => None
 
   private def doRequest(
       method: Method,
       target: String,
       routeFound: RouteFound,
-      extra: Option[Extra]
+      nativeReq: Option[NativeReq]
   ): Option[Resp] =
 
     val route = routeFound.route
@@ -125,7 +125,7 @@ case class Router[Req, Resp, Extra](routes: RouteEntry[Req, Resp]*)(using
       routeFound.params,
       routeFound.query
     )
-    val req = requestBuilder.build(routeInfo, extra)
+    val req = requestBuilder.build(routeInfo, nativeReq)
     val resp =
       entry match
         case r: RouteEntryHandler[Req, Resp] =>
