@@ -27,8 +27,8 @@ import io.via.types.{
 import scala.annotation.tailrec
 
 /** Rule to create a new Request, base on route info and route extra
-  * information. Route NativeReq is the necessary low-level information to create a
-  * new Request. This should be provided by server implementation.
+  * information. Route NativeReq is the necessary low-level information to
+  * create a new Request. This should be provided by server implementation.
   * @tparam Req
   *   Request type
   * @tparam NativeReq
@@ -65,7 +65,11 @@ case class Router[Req, Resp, NativeReq](routes: RouteEntry[Req, Resp]*)(using
     * @return
     *   The response
     */
-  def dispatch(method: Method, target: String, nativeReq: NativeReq): Option[Resp] =
+  def dispatch(
+      method: Method,
+      target: String,
+      nativeReq: NativeReq
+  ): Option[Resp] =
     doRequest(method, target, Some(nativeReq))
 
   /** Dispatch route
