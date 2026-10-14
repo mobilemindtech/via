@@ -1,23 +1,19 @@
-val sharedSettings = Seq(
-  version := "0.0.1",
-  scalacOptions ++= Seq(
-    "-new-syntax",
-    // "-no-indent",
-    "-Wvalue-discard",
-    "-Wunused:all",
-    // "-Werror",
-    "-deprecation",
-    "-explain",
-    "-explain-cyclic",
-    "-rewrite",
-    "-source:future"
-  ),
-  javacOptions ++= Seq("-source", "25", "-target", "25")
+organization := "io.via"
+scalaVersion := "3.10.0"
+version := "0.0.1"
+scalacOptions ++= Seq(
+  "-new-syntax",
+  // "-no-indent",
+  "-Wvalue-discard",
+  "-Wunused:all",
+  "-Werror",
+  "-deprecation",
+  "-explain",
+  "-explain-cyclic",
+  "-rewrite",
+  "-source:future"
 )
-
-ThisBuild / name := "via"
-ThisBuild / organization := "io.via"
-ThisBuild / scalaVersion := "3.8.1"
+javacOptions ++= Seq("-source", "27", "-target", "27")
 
 lazy val via =
   // select supported platforms
@@ -25,11 +21,19 @@ lazy val via =
     .crossType(CrossType.Full) // [Pure, Full, Dummy], default: CrossType.Full
     // .withoutSuffixFor(JVMPlatform)
     .in(file("via"))
-    .settings(sharedSettings *)
+    .settings(name := "via")
+    // .settings(sharedSettings *)
     .jvmSettings(
-      libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test"
+      libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.20" % "test"
     )
     // configure Scala-Native settings
     .nativeSettings( /* ... */ ) // defined in sbt-scala-native
+
+lazy val root = (project in file("."))
+  .aggregate(via.jvm, via.js, via.native)
+  .settings(
+    name := "via-root",
+    publish / skip := true
+  )
 
 publishLocalConfiguration ~= { _.withOverwrite(true) }

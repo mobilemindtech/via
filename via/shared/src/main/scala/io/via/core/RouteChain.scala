@@ -32,7 +32,7 @@ object RouteChain:
               case QueryParam(name, QueryList(l)) =>
                 l.exists {
                   case QueryInvalid() => true
-                  case _              => false
+                  case _ => false
                 }
               case _ => false
             }

@@ -25,49 +25,50 @@ import io.via.types.{
 import scala.annotation.tailrec
 import scala.reflect.TypeTest
 
-/** Rule to create a new Request, base on route info and route extra
-  * information. Route NativeReq is the necessary low-level information to
-  * create a new Request. This should be provided by server implementation.
-  * @tparam Req
-  *   Request type
-  * @tparam NativeReq
-  *   Route raw request type
-  */
+/**
+ * Rule to create a new Request, base on route info and route extra information. Route NativeReq is
+ * the necessary low-level information to create a new Request. This should be provided by server
+ * implementation.
+ * @tparam Req
+ *   Request type
+ * @tparam NativeReq
+ *   Route raw request type
+ */
 trait RequestBuilder[Req, NativeReq]:
 
   def build(routeInfo: RouteInfo, req: Option[NativeReq]): Req
 
 case class Router[Req <: Matchable, Resp <: Matchable, NativeReq <: Matchable](
     entries: RouteEntry[Req, Resp]*
-)(using RequestBuilder[Req, NativeReq]):
+)(using RequestBuilder[Req, NativeReq], TypeTest[Any, Req], TypeTest[Any, Resp]):
 
-  private type Result =
-    TypeTest[Any, Req] ?=> TypeTest[Any, Resp] ?=> Option[Resp]
+  private type Result = Option[Resp]
 
-  private type ReqOrResp =
-    TypeTest[Any, Req] ?=> TypeTest[Any, Resp] ?=> Req | Resp
+  private type ReqOrResp = Req | Resp
 
-  /** Dispatch route
-    * @param target
-    *   Target URL
-    * @param nativeReq
-    *   Route native req to create request
-    * @return
-    *   The response
-    */
+  /**
+   * Dispatch route
+   * @param target
+   *   Target URL
+   * @param nativeReq
+   *   Route native req to create request
+   * @return
+   *   The response
+   */
   def dispatch(target: String, nativeReq: NativeReq): Result =
     dispatch(ANY, target, nativeReq)
 
-  /** Dispatch route
-    * @param method
-    *   Http Method
-    * @param target
-    *   Target URL
-    * @param nativeReq
-    *   Route native req to create request
-    * @return
-    *   The response
-    */
+  /**
+   * Dispatch route
+   * @param method
+   *   Http Method
+   * @param target
+   *   Target URL
+   * @param nativeReq
+   *   Route native req to create request
+   * @return
+   *   The response
+   */
   def dispatch(
       method: Method,
       target: String,
@@ -75,23 +76,25 @@ case class Router[Req <: Matchable, Resp <: Matchable, NativeReq <: Matchable](
   ): Result =
     doRequest(method, target, Some(nativeReq))
 
-  /** Dispatch route
-    * @param target
-    *   Target URL
-    * @return
-    *   The response
-    */
+  /**
+   * Dispatch route
+   * @param target
+   *   Target URL
+   * @return
+   *   The response
+   */
   def dispatch(target: String): Result =
     dispatch(ANY, target)
 
-  /** Dispatch route
-    * @param method
-    *   Http method
-    * @param target
-    *   Target URL
-    * @return
-    *   The response
-    */
+  /**
+   * Dispatch route
+   * @param method
+   *   Http method
+   * @param target
+   *   Target URL
+   * @return
+   *   The response
+   */
   def dispatch(
       method: Method,
       target: String
@@ -159,38 +162,39 @@ case class Router[Req <: Matchable, Resp <: Matchable, NativeReq <: Matchable](
             case newReq: Req =>
               val crlResult =
                 method match
-                  case GET     => r.controller.get(newReq)
-                  case POST    => r.controller.post(newReq)
-                  case PUT     => r.controller.put(newReq)
-                  case DELETE  => r.controller.delete(newReq)
+                  case GET => r.controller.get(newReq)
+                  case POST => r.controller.post(newReq)
+                  case PUT => r.controller.put(newReq)
+                  case DELETE => r.controller.delete(newReq)
                   case OPTIONS => r.controller.options(newReq)
-                  case HEAD    => r.controller.head(newReq)
-                  case PATCH   => r.controller.patch(newReq)
+                  case HEAD => r.controller.head(newReq)
+                  case PATCH => r.controller.patch(newReq)
                   case CONNECT => r.controller.patch(newReq)
-                  case TRACE   => r.controller.patch(newReq)
-                  case ANY     => ()
+                  case TRACE => r.controller.patch(newReq)
+                  case ANY => ()
               crlResult match
                 case resp: Resp => resp |> Some.apply
-                case _          => // not found
+                case _ => // not found
                   // try default handler
                   r.controller.handle(newReq) match
                     case resp: Resp => resp |> Some.apply
-                    case _          => None // not found
+                    case _ => None // not found
 
     resp match
       case Some(rsp) =>
         applyLeave(method, req, rsp, entry.leave) |> Some.apply
       case None => None
 
-  /** Apply enter middleware
-    * @param method
-    *   http verb
-    * @param req
-    *   http request
-    * @param enter
-    *   middleware chain
-    * @return
-    */
+  /**
+   * Apply enter middleware
+   * @param method
+   *   http verb
+   * @param req
+   *   http request
+   * @param enter
+   *   middleware chain
+   * @return
+   */
   @tailrec
   private def applyEnter(
       method: Method,
@@ -209,17 +213,18 @@ case class Router[Req <: Matchable, Resp <: Matchable, NativeReq <: Matchable](
         else applyEnter(method, req, enter.next)
       case _ => req
 
-  /** Apply leave middleware
-    * @param method
-    *   http verb
-    * @param req
-    *   http request
-    * @param resp
-    *   http response
-    * @param leave
-    *   middleware chain
-    * @return
-    */
+  /**
+   * Apply leave middleware
+   * @param method
+   *   http verb
+   * @param req
+   *   http request
+   * @param resp
+   *   http response
+   * @param leave
+   *   middleware chain
+   * @return
+   */
   @tailrec
   private def applyLeave(
       method: Method,
@@ -349,14 +354,15 @@ object Router:
   def route(path: Path): Route =
     Route(path).compile
 
-  /** Analyze route path
-    * @param path
-    *   E.g. / /user/:id -> any value (string param) /user/:id([0-9]) -> int
-    *   value (int param) /user/:id(int) -> int value (int param) /user/\* ->
-    *   tail paths (seq param) /user/:id([0-9]+) -> regrex value (string param)
-    *
-    * @return
-    */
+  /**
+   * Analyze route path
+   * @param path
+   *   E.g. / /user/:id -> any value (string param) /user/:id([0-9]) -> int value (int param)
+   *   /user/:id(int) -> int value (int param) /user/\* -> tail paths (seq param) /user/:id([0-9]+)
+   *   -> regrex value (string param)
+   *
+   * @return
+   */
   def route(path: String): Route =
     if path == "/"
     then route(root)
@@ -371,7 +377,7 @@ object Router:
               case Some(matcher) =>
                 val varName = matcher.group(1)
                 matcher.group(2) match
-                  case null                             => acc / param(varName)
+                  case null => acc / param(varName)
                   case "([0-9])" | "([0-9]+)" | "(int)" => acc / int(varName)
                   case value => acc / regex(varName, value)
               case _ =>

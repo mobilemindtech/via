@@ -5,7 +5,6 @@ import via.*
 import io.via.core.{RequestBuilder, Router}
 import io.via.types.{Method, Params, Query, RouteInfo, RouteMatcher}
 
-
 type Headers = Map[String, String]
 
 case class Auth(username: String, token: String)
@@ -53,15 +52,14 @@ object Response:
   def apply[T](status: Int, body: T, contentType: String): Response[T] =
     Response(status, Some(body), Some(contentType))
 
-
 // sbt testOnly *RouterTest
 class RouterTest extends AnyFunSuite:
 
   given RequestBuilder[Request, NativeRequest]:
     override def build(
-                        routeInfo: RouteInfo,
-                        nativeRequest: Option[NativeRequest]
-                      ): Request =
+        routeInfo: RouteInfo,
+        nativeRequest: Option[NativeRequest]
+    ): Request =
       Request(
         routeInfo.method,
         routeInfo.target,
@@ -78,7 +76,7 @@ class RouterTest extends AnyFunSuite:
 
   test("router GET /") {
 
-    val entry = route(GET, root) { (req: Request) =>
+    val entry = route(GET, root) { (_: Request) =>
       Response(200, "OK", "text/plain")
     }
 
@@ -168,7 +166,7 @@ class RouterTest extends AnyFunSuite:
     val validation = enter { (req: Request) =>
       req.body match
         case None => Response.badRequest
-        case _    => req
+        case _ => req
     }
 
     val authIndex = auth ++ validation ++ index
@@ -197,7 +195,7 @@ class RouterTest extends AnyFunSuite:
 
   test("router GET  with json middleware") {
 
-    val index = route[Request, ResponseBase](GET, root) { (req: Request) =>
+    val index = route[Request, ResponseBase](GET, root) { (_: Request) =>
       Response(200, Map("name" -> "ricardo"))
     }
 

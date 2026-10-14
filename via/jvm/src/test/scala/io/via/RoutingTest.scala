@@ -22,7 +22,7 @@ class RoutingTest extends AnyFunSuite:
           val expected = expects(i)
           assert(
             found == expected,
-            s"wong param ${expected.name} expected ${expected}  != found $found"
+            s"wrong param ${expected.name} expected ${expected}  != found $found"
           )
 
       case RouteNotFound() =>
@@ -46,7 +46,7 @@ class RoutingTest extends AnyFunSuite:
               val expected = tp._2
               assert(
                 found._2 == expected,
-                s"wong param ${found._1} expected ${expected} != found $found"
+                s"wrong param ${found._1} expected ${expected} != found $found"
               )
             case None => fail(s"query ${tp._1} not found")
 

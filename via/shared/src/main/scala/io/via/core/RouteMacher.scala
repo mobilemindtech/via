@@ -20,6 +20,7 @@ object RouteMacher:
       params: Params = Params(),
       query: Query = Query()
   )
+
   def matchRoute(
       method: Method,
       target: String,
@@ -134,7 +135,7 @@ object RouteMacher:
           case RouteQueryList(typ) =>
             (getQueryName(typ), toQueryList(targetQuery, typ)) match
               case (name, QueryList(Nil)) => QueryParam(name, QueryInvalid())
-              case (name, ql)             => QueryParam(name, ql)
+              case (name, ql) => QueryParam(name, ql)
           case typ => throw RouteException(s"invalid route query type: $typ")
         }
 
@@ -158,19 +159,19 @@ object RouteMacher:
       f: String => Option[T]
   ): List[Option[T]] = v match
     case Some(s) => s.split(",").toList.map(f)
-    case None    => Nil
+    case None => Nil
 
   private def toQueryTypeOrError[T <: QueryType](
       v: Option[String],
       f: String => Option[T]
   ): QueryType = v match
     case Some(s) => f(s).getOrElse(QueryInvalid())
-    case None    => QueryInvalid()
+    case None => QueryInvalid()
 
   private def unwrapRouteTypeOpt[T <: QueryType](v: Option[T]): T |
     QueryInvalid = v match
     case Some(r) => r
-    case None    => QueryInvalid()
+    case None => QueryInvalid()
 
   private def toQueryList(
       qs: Map[String, String],
@@ -213,15 +214,15 @@ object RouteMacher:
     case RouteQueryList(typ) =>
       toQueryList(qs, typ) match
         case ql @ QueryList(l) if l.nonEmpty => Some(ql) |> QueryOption.apply
-        case _                               => None |> QueryOption.apply
+        case _ => None |> QueryOption.apply
 
   private def getQueryName(
       typ: RouteQueryListType | RouteQueryOptType
   ): String = typ match
-    case RouteQueryInt(name)      => name
-    case RouteQueryLong(name)     => name
-    case RouteQueryStr(name)      => name
-    case RouteQueryBool(name)     => name
+    case RouteQueryInt(name) => name
+    case RouteQueryLong(name) => name
+    case RouteQueryStr(name) => name
+    case RouteQueryBool(name) => name
     case RouteQueryRegex(name, _) => name
     case typ =>
       throw RouteException(
@@ -249,15 +250,15 @@ object RouteMacher:
 
   private def mkQuery(queries: List[QueryParam]): Query =
     def extract(v: QueryType): Matchable = v match
-      case QueryInt(v)  => v
+      case QueryInt(v) => v
       case QueryLong(v) => v
-      case QueryStr(v)  => v
+      case QueryStr(v) => v
       case QueryBool(v) => v
       case QueryList(v) => v.map(extract)
       case QueryOption(v) =>
         v match
           case Some(s) => Some(s |> extract)
-          case None    => None
+          case None => None
       case typ =>
         throw RouteException(s"invalid route query type to extract: ${typ}")
 
@@ -278,19 +279,19 @@ object RouteMacher:
       route.path.parts.map:
         case p: PathParam =>
           params.find(_.name == p.name) match
-            case Some(ParamInt(_, v))      => v
-            case Some(ParamLong(_, v))     => v
-            case Some(ParamStr(_, v))      => v
+            case Some(ParamInt(_, v)) => v
+            case Some(ParamLong(_, v)) => v
+            case Some(ParamStr(_, v)) => v
             case Some(ParamPaths(_, tail)) => tail.head
             case _ =>
               throw RouteException(
                 s"param ${p.name} not found to route match creator"
               )
         case p: PathRoot => p
-        case p: PathEnd  => p
+        case p: PathEnd => p
         case PathPart(v) => v
         case p =>
           throw RouteException(s"wrong path part $p to route match creator")
     route.path.parts.lastOption match
       case Some(ParamPaths(_, tail)) => matcher ::: tail.tail
-      case _                         => matcher
+      case _ => matcher

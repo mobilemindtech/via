@@ -1,6 +1,5 @@
 package io.via.types
 
-
 import scala.collection.mutable
 
 case class Route(
@@ -23,8 +22,8 @@ case class Route(
       path.parts
         .map[String]:
           case _: PathRoot => ""
-          case _: PathEnd  => "/$"
-          case _: PathAny  => "/(.+)$"
+          case _: PathEnd => "/$"
+          case _: PathAny => "/(.+)$"
           case p: PathPart => s"/${p.path}"
           case p: PathParam =>
             params.append(p)

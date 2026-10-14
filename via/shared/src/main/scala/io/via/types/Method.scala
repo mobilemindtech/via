@@ -1,9 +1,10 @@
 package io.via.types
 
-/** Http methods
-  * @param verb
-  *   http verb
-  */
+/**
+ * Http methods
+ * @param verb
+ *   http verb
+ */
 enum Method(val verb: String):
   case GET extends Method("GET")
   case POST extends Method("POST")

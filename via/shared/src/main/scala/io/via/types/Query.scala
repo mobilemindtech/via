@@ -108,44 +108,44 @@ case class Query(
       t: TTAny[List[String]]
   ): List[String] =
     tuple.find(_._1 == name) match
-      case Some((_, l @ t(_)))       => l
+      case Some((_, l @ t(_))) => l
       case Some((_, Some(l @ t(_)))) => l
-      case _                         => Nil
+      case _ => Nil
 
   def listInt(name: String)(using t: TTAny[List[Int]]): List[Int] =
     tuple.find(_._1 == name) match
-      case Some((_, l @ t(_)))       => l
+      case Some((_, l @ t(_))) => l
       case Some((_, Some(l @ t(_)))) => l
-      case _                         => Nil
+      case _ => Nil
 
   def listLong(name: String)(using t: TTAny[List[Long]]): List[Long] =
     tuple.find(_._1 == name) match
-      case Some((_, l @ t(_)))       => l
+      case Some((_, l @ t(_))) => l
       case Some((_, Some(l @ t(_)))) => l
-      case _                         => Nil
+      case _ => Nil
 
   def str(name: String)(using t: TTAny[String]): Option[String] =
     tuple.find(_._1 == name) match
-      case Some((_, s @ t(_)))       => Some(s)
+      case Some((_, s @ t(_))) => Some(s)
       case Some((_, Some(s @ t(_)))) => Some(s)
-      case _                         => None
+      case _ => None
 
   def int(name: String)(using t: TTAny[Int]): Option[Int] =
     tuple.find(_._1 == name) match
-      case Some((_, s @ t(_)))       => Some(s)
+      case Some((_, s @ t(_))) => Some(s)
       case Some((_, Some(s @ t(_)))) => Some(s)
-      case _                         => None
+      case _ => None
 
   def long(name: String)(using t: TTAny[Long]): Option[Long] =
     tuple.find(_._1 == name) match
-      case Some((_, s @ t(_)))       => Some(s)
+      case Some((_, s @ t(_))) => Some(s)
       case Some((_, Some(s @ t(_)))) => Some(s)
-      case _                         => None
+      case _ => None
 
   def bool(name: String): Option[Boolean] =
     tuple.find(_._1 == name) match
       case Some((_, s: Boolean)) => Some(s)
-      case _                     => None
+      case _ => None
 
 object Query:
   enum QueryType:
