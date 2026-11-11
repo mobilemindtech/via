@@ -1,5 +1,5 @@
 organization := "io.via"
-scalaVersion := "3.10.0"
+scalaVersion := "3.10.1"
 version := "0.0.1"
 scalacOptions ++= Seq(
   "-new-syntax",
